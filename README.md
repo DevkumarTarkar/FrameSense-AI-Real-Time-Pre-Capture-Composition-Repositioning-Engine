@@ -3,8 +3,11 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.14](https://img.shields.io/badge/Python-3.14-green.svg)](https://www.python.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688.svg)](https://fastapi.tiangolo.com/)
 [![React 18](https://img.shields.io/badge/React-18-61DAFB.svg)](https://reactjs.org/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-EE4C2C.svg)](https://pytorch.org/)
+[![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED.svg)](https://www.docker.com/)
 
 ---
 
@@ -25,39 +28,44 @@ Every day, billions of photos are captured on mobile devices, but most users lac
 
 ---
 
-## 🏗️ System Architecture
-```
-+------------------+      Sub-20ms Feed      +------------------------+
-|  Camera Device   | ----------------------> |   HTML5 Canvas HUD     |
-| (WebRTC Stream)  |                         |  (60 FPS AR Overlays)  |
-+------------------+                         +------------------------+
-         |                                               ^
-         v                                               | Score & Reticles
-+---------------------------------------------------------------------+
-|                     FrameSense Edge AI Engine                       |
-|  +---------------------+  +--------------------+  +--------------+  |
-|  | MobileNetV3 NIMA    |  | MediaPipe Mesh     |  | Hough Transform |
-|  | (Aesthetic Scoring) |  | (Pose & Headroom)  |  | (Horizon Tilt)| |
-|  +---------------------+  +--------------------+  +--------------+  |
-+---------------------------------------------------------------------+
-```
+## 🏗️ Technical Architecture & Stack Alignment
 
----
-
-## 📁 Repository Structure
 ```
-FrameSense-AI/
-├── README.md              # Project overview & documentation
-├── .gitignore             # Git ignore rules
-└── venv/                  # Python virtual environment
++-----------------------------------------------------------------------+
+|  Frontend: React 18 + TypeScript + Vite + HTML5 Canvas (60 FPS HUD)   |
++-----------------------------------------------------------------------+
+                                   |
+                       WebSockets / REST (<20ms)
+                                   v
++-----------------------------------------------------------------------+
+|                Backend: Python 3.14 + FastAPI + Async               |
+|                                                                       |
+|  +---------------------+  +--------------------+  +----------------+  |
+|  | PyTorch NIMA        |  | MediaPipe Face     |  | YOLOv8-Pose    |  |
+|  | (Aesthetic Score)   |  | (Headroom Mesh)    |  | (Limb Bounds)  |  |
+|  +---------------------+  +--------------------+  +----------------+  |
+|  +---------------------+  +--------------------+                      |
+|  | OpenCV & NumPy      |  | PostgreSQL DB      |                      |
+|  | (Horizon Hough)     |  | (Analytics & Logs) |                      |
+|  +---------------------+  +--------------------+                      |
++-----------------------------------------------------------------------+
+                                   |
+                Docker Containerization & GitHub Actions CI/CD
 ```
 
 ---
 
-## 🛠️ Tech Stack
-- **AI & ML**: PyTorch, MobileNetV3 (NIMA), OpenCV, MediaPipe, NumPy
-- **Backend API**: FastAPI, Uvicorn, Pillow, Pydantic
-- **Frontend HUD**: React 18, Vite, HTML5 Canvas 2D, Web Speech API
+## 🛠️ Complete Technology Stack
+
+| Layer | Technologies Used | Role / Purpose |
+| :--- | :--- | :--- |
+| **Frontend UI** | **React 18, TypeScript, Vite** | Futuristic Cyberpunk AR Viewfinder HUD & Canvas Reticles |
+| **Real-Time Backend**| **Python 3.14, FastAPI, Uvicorn** | Low-latency WebSockets & REST image processing server |
+| **Computer Vision** | **OpenCV, NumPy** | Hough Line horizon tilt calculation & spatial matrix math |
+| **Deep Learning** | **PyTorch, MobileNetV3 (NIMA)** | Aesthetic score regression & distribution scoring |
+| **Pose & Keypoints** | **YOLOv8-Pose, MediaPipe** | 468 Face Mesh landmarks & body pose limb-cut protection |
+| **Database** | **PostgreSQL** | Shot metadata analytics, historical score logs, session data |
+| **DevOps & CI/CD** | **Docker, Docker Compose, GitHub Actions**| Containerization and automated integration testing workflows |
 
 ---
 
