@@ -85,7 +85,7 @@ Unlike conventional toy projects that rely exclusively on either black-box neura
 | **FR2** | Sampling Gateway | Sub-sample video frames to ~10 FPS, JPEG-encode, and transmit over persistent WebSocket. |
 | **FR3** | Subject Detection | Detect primary human face bounding box `[x1, y1, x2, y2]` using MediaPipe Face Detection. |
 | **FR4** | Rule of Thirds | Calculate Euclidean distance from subject center to the nearest of 4 grid power points; tolerance $\pm 8\%$ of width. |
-| **FR5** | Headroom Analysis | Compute headroom ratio $\frac{\text{head\_top\_y}}{\text{frame\_height}}$. Target ideal window: $0.10 \le \text{ratio} \le 0.18$. |
+| **FR5** | Headroom Analysis | Compute headroom ratio $(y_{\text{top}} / H_{\text{frame}})$. Target ideal window: $0.10 \le \text{ratio} \le 0.18$. |
 | **FR6** | Horizon Leveling | Detect dominant background lines via OpenCV Canny + HoughLinesP; measure tilt angle $\theta$. Tolerance $|\theta| \le 2^\circ$. |
 | **FR7** | Subject Distance | Compute face width to frame width proportion. Target: $0.12 \le \text{ratio} \le 0.45$. |
 | **FR8** | Neural Aesthetics | Evaluate lighting, blur, color harmony, and aesthetic depth via MobileNetV3-NIMA on RTX 3050 CUDA. |
@@ -107,7 +107,7 @@ $$P^* = \arg\min_{P_i} \| C_{\text{subject}} - P_i \|_2$$
 If distance $d \le 0.08 \times W$, score $= 1.0$. Otherwise, falls off linearly with directional guidance: *"Shift subject slightly right/left/up/down"*.
 
 ### 5.2 Headroom Clearance Formulation
-$$\text{Ratio}_{\text{headroom}} = \frac{Y_{\text{head\_top}}}{H_{\text{frame}}}$$
+$$\text{Ratio}_{\text{headroom}} = \frac{y_{\text{top}}}{H_{\text{frame}}}$$
 - **Ideal Range:** $0.10 \le \text{ratio} \le 0.18 \implies \text{Score} = 1.0$
 - **Tight Headroom ($< 0.10$):** Proportional penalty $\frac{\text{ratio}}{0.10} \implies$ *"Tilt camera down"*.
 - **Excessive Headroom ($> 0.18$):** Linear penalty $\implies$ *"Tilt camera up or step closer"*.

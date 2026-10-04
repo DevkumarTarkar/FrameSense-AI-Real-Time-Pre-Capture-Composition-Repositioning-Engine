@@ -30,42 +30,42 @@ Traditional computer vision applications in photographic framing suffer from an 
 
 ```mermaid
 graph TB
-    subgraph Client["🌐 Client-Side Browser (React 18 + TypeScript + Vite)"]
-        CAM[Webcam Feed<br/>navigator.mediaDevices.getUserMedia]
-        CANVAS_SAMPLE[Off-screen Sampling Canvas<br/>10 FPS JPEG Encoder]
-        WS_CLIENT[WebSocket Client Manager<br/>Auto-reconnect & Queue]
-        HUD[Composition HUD<br/>HTML5 Canvas 2D @ 60 FPS]
-        VOICE[Voice Guidance Engine<br/>Web Speech Synthesis API]
-        DIALS[Dual Score Displays<br/>Geometric 0-100 & Aesthetic 1-10]
+    subgraph Client["Client Browser (React 18 + TypeScript + Vite)"]
+        CAM["Webcam Feed<br/>getUserMedia"]
+        CANVAS_SAMPLE["Off-screen Sampling Canvas<br/>10 FPS JPEG Encoder"]
+        WS_CLIENT["WebSocket Client Manager<br/>Auto-reconnect & Queue"]
+        HUD["Composition HUD<br/>HTML5 Canvas 2D @ 60 FPS"]
+        VOICE["Voice Guidance Engine<br/>Web Speech Synthesis API"]
+        DIALS["Dual Score Displays<br/>Geometric 0-100 & Aesthetic 1-10"]
     end
 
-    subgraph Network["⚡ Network Layer (Local / LAN)"]
-        WS_PIPE["WebSocket Protocol (ws://127.0.0.1:8000/ws/analyze)<br/>Bidirectional Full-Duplex Frame Streaming"]
+    subgraph Network["Network Layer (Local / LAN)"]
+        WS_PIPE["WebSocket Protocol: ws://127.0.0.1:8000/ws/analyze<br/>Bidirectional Full-Duplex Frame Streaming"]
     end
 
-    subgraph Backend["🖥️ Backend Server (FastAPI + Uvicorn Async Event Loop)"]
-        WS_ENDPOINT[WebSocket Endpoint Handler<br/>backend/app/websocket_routes.py]
-        PAYLOAD_VAL[Pydantic v2 Validator<br/>backend/app/schemas.py]
-        ORCHESTRATOR[Vision Engine Orchestrator<br/>backend/app/vision.py]
+    subgraph Backend["Backend Server (FastAPI + Uvicorn Async Event Loop)"]
+        WS_ENDPOINT["WebSocket Endpoint Handler<br/>backend/app/websocket_routes.py"]
+        PAYLOAD_VAL["Pydantic v2 Validator<br/>backend/app/schemas.py"]
+        ORCHESTRATOR["Vision Engine Orchestrator<br/>backend/app/vision.py"]
     end
 
-    subgraph Brain1["📐 BRAIN 1: Geometric Composition Engine (CPU)"]
-        MP_FACE[MediaPipe Face Detection<br/>BlazeFace Short-Range Landmark]
-        CV_EDGE[OpenCV Pre-Processing<br/>Grayscale + Gaussian Blur + Canny]
-        CV_HOUGH[Hough Line Transform<br/>Probabilistic Dominant Horizon HoughLinesP]
-        AI_THIRDS[Rule-of-Thirds Grid Evaluator<br/>ai_engine/rule_of_thirds.py]
-        AI_HEAD[Headroom Ratio Analyzer<br/>ai_engine/headroom.py]
-        AI_TILT[Horizon Incline Scorer<br/>ai_engine/horizon.py]
-        AI_DIST[Subject Framing Distance<br/>ai_engine/distance.py]
-        AI_SCORER[Deterministic Heuristic Aggregator<br/>ai_engine/scoring.py]
+    subgraph Brain1["BRAIN 1: Geometric Composition Engine (CPU)"]
+        MP_FACE["MediaPipe Face Detection<br/>BlazeFace Short-Range Landmark"]
+        CV_EDGE["OpenCV Pre-Processing<br/>Grayscale and Canny Edge"]
+        CV_HOUGH["Hough Line Transform<br/>Probabilistic Dominant Horizon"]
+        AI_THIRDS["Rule-of-Thirds Grid Evaluator<br/>ai_engine/rule_of_thirds.py"]
+        AI_HEAD["Headroom Ratio Analyzer<br/>ai_engine/headroom.py"]
+        AI_TILT["Horizon Incline Scorer<br/>ai_engine/horizon.py"]
+        AI_DIST["Subject Framing Distance<br/>ai_engine/distance.py"]
+        AI_SCORER["Deterministic Heuristic Aggregator<br/>ai_engine/scoring.py"]
     end
 
-    subgraph Brain2["⚡ BRAIN 2: Deep Learning Neural Aesthetic Engine (RTX 3050 GPU)"]
-        TORCH_TENSOR[PyTorch Tensor Ingestion<br/>RGB Normalization (ImageNet Stats)]
-        CUDA_STREAM[CUDA 12.4 Device Stream<br/>torch.cuda.amp.autocast FP16/FP32]
-        NIMA_CNN[MobileNetV3 / InceptionV2 Backbone<br/>10-Class Aesthetic Distribution Softmax]
-        EMD_HEAD[Earth Mover's Distance Calibrator<br/>Cumulative Distribution Mean Calculation]
-        AESTHETIC_SCORE[Calibrated Aesthetic Score<br/>Normalized 1.0 - 10.0 Scale]
+    subgraph Brain2["BRAIN 2: Deep Learning Neural Aesthetic Engine (RTX 3050 GPU)"]
+        TORCH_TENSOR["PyTorch Tensor Ingestion<br/>RGB Normalization - ImageNet Stats"]
+        CUDA_STREAM["CUDA 12.4 Device Stream<br/>torch.cuda.amp FP16/FP32"]
+        NIMA_CNN["MobileNetV3 / InceptionV2 Backbone<br/>10-Class Aesthetic Distribution"]
+        EMD_HEAD["Earth Movers Distance Calibrator<br/>Cumulative Distribution Mean"]
+        AESTHETIC_SCORE["Calibrated Aesthetic Score<br/>Normalized 1.0 - 10.0 Scale"]
     end
 
     CAM --> CANVAS_SAMPLE
@@ -79,7 +79,7 @@ graph TB
     ORCHESTRATOR -->|Decoded BGR NumPy Array| CV_EDGE
     CV_EDGE --> CV_HOUGH
     MP_FACE -->|Normalized Bounding Box| AI_SCORER
-    CV_HOUGH -->|Dominant Angle θ| AI_SCORER
+    CV_HOUGH -->|Dominant Angle theta| AI_SCORER
     AI_SCORER --> AI_THIRDS
     AI_SCORER --> AI_HEAD
     AI_SCORER --> AI_TILT
@@ -232,13 +232,13 @@ sequenceDiagram
 
 #### A. Rule-of-Thirds Golden Intersection Distance
 The image frame of dimensions $W \times H$ has four primary rule-of-thirds power intersections:
-$$\mathcal{P} = \left\{ \left(\frac{W}{3}, \frac{H}{3}\right), \left(\frac{2W}{3}, \frac{H}{3}\right), \left(\frac{W}{3}, \frac{2H}{3}\right), \left(\frac{2W}{3}, \frac{2H}{3}\right) \right\}$$
+$$\mathcal{P} = \{ (W/3, H/3), (2W/3, H/3), (W/3, 2H/3), (2W/3, 2H/3) \}$$
 
 Given the detected primary subject's focal point (between the eyes / center of upper third of bounding box) $S = (x_s, y_s)$, the normalized Euclidean distance to the nearest golden intersection $P^* \in \mathcal{P}$ is:
 $$d_{\text{norm}} = \frac{\|S - P^*\|_2}{\sqrt{W^2 + H^2}}$$
 The alignment score $S_{\text{thirds}} \in [0, 40]$ is computed using a decaying penalty function:
-$$S_{\text{thirds}} = \max\left(0, 40 \times \left(1.0 - \frac{d_{\text{norm}}}{\tau_{\text{threshold}}}\right)\right)$$
-where $\tau_{\text{threshold}} = 0.25$ is the maximum acceptable deviation before score zeroing.
+$$S_{\text{thirds}} = \max\left(0, 40 \times \left(1.0 - \frac{d_{\text{norm}}}{\tau}\right)\right)$$
+where $\tau = 0.25$ is the maximum acceptable deviation before score zeroing.
 
 #### B. Headroom Ratio
 For a portrait or human subject with detected head top coordinate $y_{\text{top}}$ in a frame of height $H$:
