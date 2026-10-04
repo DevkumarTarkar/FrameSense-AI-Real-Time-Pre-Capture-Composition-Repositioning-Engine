@@ -16,6 +16,9 @@ env/
 node_modules/
 dist/
 build/
+.next/
+*.tsbuildinfo
+next-env.d.ts
 
 # IDE / OS files
 .vscode/
