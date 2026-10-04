@@ -23,3 +23,10 @@ build/
 .DS_Store
 Thumbs.db
 *.log
+.pytest_cache/
+
+# Large Dataset Folders (Do not push 5,000 image binaries to GitHub)
+data/images/
+data/test_unseen_images/
+data/test_comparison/
+data/AVA.txt
