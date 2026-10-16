@@ -33,3 +33,6 @@ data/images/
 data/test_unseen_images/
 data/test_comparison/
 data/AVA.txt
+
+# Temporary lock files
+~$*

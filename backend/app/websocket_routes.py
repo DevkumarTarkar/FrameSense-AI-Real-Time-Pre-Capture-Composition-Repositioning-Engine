@@ -25,22 +25,34 @@ async def websocket_composition_endpoint(websocket: WebSocket):
 
     try:
         while True:
-            # Receive text data (JSON) from client
+            # Receive text data (JSON or base64) from client
             raw_data = await websocket.receive_text()
 
             try:
-                data = json.loads(raw_data)
-                payload = FramePayload(**data)
+                stripped = raw_data.strip()
+                if stripped.startswith("{"):
+                    data = json.loads(stripped)
+                    payload = FramePayload(**data)
+                else:
+                    payload = FramePayload(image_base64=stripped)
             except Exception as parse_err:
                 logger.warning(f"Malformed payload received: {parse_err}")
-                await websocket.send_json({"error": "Invalid frame payload format"})
+                await websocket.send_json({
+                    "score": 0,
+                    "messages": ["Waiting for clear video feed..."],
+                    "error": "Invalid frame payload format"
+                })
                 continue
 
             # Decode frame
             frame = vision_engine.decode_image(payload.image_base64)
             if frame is None:
                 # PRD FR12: Single bad frame recovery without dropping connection
-                await websocket.send_json({"error": "Failed to decode frame image"})
+                await websocket.send_json({
+                    "score": 0,
+                    "messages": ["Decoding camera frame..."],
+                    "error": "Failed to decode frame image"
+                })
                 continue
 
             try:
@@ -60,9 +72,19 @@ async def websocket_composition_endpoint(websocket: WebSocket):
 
                 await websocket.send_json(response_data)
 
+            except WebSocketDisconnect:
+                logger.info("Client disconnected during frame handling.")
+                break
             except Exception as proc_err:
                 logger.error(f"Error during frame processing: {proc_err}", exc_info=True)
-                await websocket.send_json({"error": "Frame analysis processing error"})
+                try:
+                    await websocket.send_json({
+                        "score": 0,
+                        "messages": ["Analyzing framing..."],
+                        "error": "Frame analysis processing error"
+                    })
+                except Exception:
+                    break
 
     except WebSocketDisconnect:
         logger.info("WebSocket client disconnected normally.")
