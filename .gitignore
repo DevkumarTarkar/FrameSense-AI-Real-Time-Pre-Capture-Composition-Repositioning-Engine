@@ -1,0 +1,38 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Virtual environment
+venv/
+ENV/
+env/
+.venv/
+
+# Node dependencies
+node_modules/
+dist/
+build/
+.next/
+*.tsbuildinfo
+next-env.d.ts
+
+# IDE / OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+.pytest_cache/
+
+# Large Dataset Folders (Do not push 5,000 image binaries to GitHub)
+data/images/
+data/test_unseen_images/
+data/test_comparison/
+data/AVA.txt
+
+# Temporary lock files
+~$*
