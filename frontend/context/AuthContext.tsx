@@ -34,8 +34,8 @@ interface AuthContextType {
   user: User | null
   isAuthenticated: boolean
   isLoading: boolean
-  login: (email: string, name?: string, role?: string) => void
-  signup: (name: string, email: string, role: string) => void
+  login: (email: string, name?: string, role?: string, dob?: string) => void
+  signup: (name: string, email: string, role?: string, dob?: string) => void
   updateProfile: (updatedData: Partial<User>) => void
   logout: () => void
 }
@@ -82,7 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user, isLoading, pathname, router])
 
-  const login = (email: string, name?: string, role?: string) => {
+  const login = (email: string, name?: string, role?: string, dob?: string) => {
     let resolvedFirst = 'Dev'
     let resolvedMiddle = 'Kumar'
     let resolvedLast = 'Tarkar'
@@ -99,7 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       resolvedLast = 'Shaw'
       resolvedRole = 'Faculty Mentor'
     } else if (name) {
-      const parts = name.split(' ')
+      const parts = name.trim().split(' ')
       resolvedFirst = parts[0] || 'User'
       resolvedMiddle = parts.length > 2 ? parts[1] : ''
       resolvedLast = parts.length > 2 ? parts.slice(2).join(' ') : parts[1] || ''
@@ -116,7 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email,
       role: role || resolvedRole,
       phone: email.startsWith('dev.kumar') ? '+91 98765 43210' : '+91 91234 56789',
-      dob: email.startsWith('dev.kumar') ? '2004-05-18' : '2004-08-22',
+      dob: dob || (email.startsWith('dev.kumar') ? '2004-05-18' : '2004-08-22'),
       gender: email.startsWith('sanjana') ? 'Female' : 'Male',
       houseNo: email.startsWith('dev.kumar') ? 'Flat 402, Block B' : 'House 12',
       street: email.startsWith('dev.kumar') ? 'Chaumuhan, NH-19 (Near GLA Campus)' : 'Civil Lines',
@@ -138,7 +138,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.replace('/')
   }
 
-  const signup = (name: string, email: string, role: string) => {
+  const signup = (name: string, email: string, role?: string, dob?: string) => {
     const parts = name.trim().split(' ')
     const resolvedFirst = parts[0] || 'Photographer'
     const resolvedMiddle = parts.length > 2 ? parts[1] : ''
@@ -152,9 +152,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       middleName: resolvedMiddle,
       lastName: resolvedLast,
       email,
-      role,
+      role: role || 'Photographer',
       phone: '',
-      dob: '2004-01-01',
+      dob: dob || '2004-01-01',
       gender: 'Male',
       houseNo: '',
       street: '',

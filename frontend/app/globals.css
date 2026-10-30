@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Playfair+Display:ital,wght@0,400..700;1,400..700&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
@@ -20,26 +21,56 @@
 }
 
 :root {
-  color-scheme: dark;
-  --background: oklch(0.075 0.01 160);
-  --foreground: oklch(0.94 0.01 180);
-  --card: oklch(0.11 0.012 170);
-  --card-foreground: oklch(0.94 0.01 180);
-  --popover: oklch(0.11 0.012 170);
-  --popover-foreground: oklch(0.94 0.01 180);
-  --primary: oklch(0.92 0.2 120);
-  --primary-foreground: oklch(0.16 0.03 120);
-  --secondary: oklch(0.16 0.018 170);
-  --secondary-foreground: oklch(0.92 0.01 180);
-  --muted: oklch(0.16 0.018 170);
-  --muted-foreground: oklch(0.62 0.02 180);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 12%);
-  --ring: oklch(0.92 0.2 120);
-  --radius: 0.75rem;
+  color-scheme: light;
+  /* FrameSense AI Design System Palette */
+  --background: #F7F8F4;
+  --foreground: #193B38;
+  --card: #FFFFFF;
+  --card-foreground: #193B38;
+  --popover: #FFFFFF;
+  --popover-foreground: #193B38;
+  --primary: #173F38;
+  --primary-foreground: #FFFFFF;
+  --accent: #21866D;
+  --secondary: #EAF1ED;
+  --secondary-foreground: #193B38;
+  --muted: #EAF1ED;
+  --muted-foreground: #647773;
+  --border: #E3E9E5;
+  --input: #E3E9E5;
+  --ring: #173F38;
+  --radius: 0.875rem;
 }
 
-* { @apply border-border outline-ring/50; }
-html { background: #090b0d; }
-body { @apply bg-background text-foreground; margin: 0; font-family: Arial, Helvetica, sans-serif; }
-button { cursor: pointer; }
+* {
+  border-color: #E3E9E5;
+}
+
+html {
+  background-color: #F7F8F4;
+  color: #193B38;
+}
+
+body {
+  background-color: #F7F8F4;
+  color: #193B38;
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-serif {
+  font-family: 'Playfair Display', Georgia, serif;
+}
+
+.font-sans {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.font-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+button {
+  cursor: pointer;
+}

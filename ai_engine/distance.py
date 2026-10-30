@@ -6,8 +6,8 @@ Adheres strictly to PRD Section 8.4.
 
 from typing import Tuple, Optional
 
-TOO_FAR_THRESHOLD = 0.12
-TOO_CLOSE_THRESHOLD = 0.45
+TOO_FAR_THRESHOLD = 0.10
+TOO_CLOSE_THRESHOLD = 0.52
 
 
 def evaluate_subject_distance(

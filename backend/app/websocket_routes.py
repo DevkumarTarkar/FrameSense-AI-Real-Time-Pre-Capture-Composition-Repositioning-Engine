@@ -4,6 +4,7 @@ Real-time bidirectional WebSocket handler for live camera telemetry.
 Adheres strictly to PRD Section 10 & Functional Requirements FR11, FR12.
 """
 
+import asyncio
 import json
 import logging
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
@@ -56,8 +57,8 @@ async def websocket_composition_endpoint(websocket: WebSocket):
                 continue
 
             try:
-                # Execute unified composition analysis pipeline
-                telemetry = vision_engine.analyze_frame(frame)
+                # Execute unified composition analysis pipeline off the main event loop
+                telemetry = await asyncio.to_thread(vision_engine.analyze_frame, frame)
 
                 response_data = TelemetryResponse(
                     score=telemetry.score,
@@ -68,6 +69,12 @@ async def websocket_composition_endpoint(websocket: WebSocket):
                     aesthetic_score=telemetry.sub_scores.get("aesthetic_ai"),
                     device="cuda" if str(vision_engine.device) == "cuda" else "cpu",
                     sub_scores=telemetry.sub_scores,
+                    shot_type=telemetry.shot_type,
+                    shot_description=telemetry.shot_description,
+                    shot_confidence=telemetry.shot_confidence,
+                    estimated_distance_ft=telemetry.estimated_distance_ft,
+                    estimated_distance_m=telemetry.estimated_distance_m,
+                    all_faces=telemetry.all_faces,
                 ).model_dump()
 
                 await websocket.send_json(response_data)

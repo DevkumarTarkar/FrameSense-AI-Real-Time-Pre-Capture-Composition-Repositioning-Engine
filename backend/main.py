@@ -3,6 +3,7 @@ FrameSense AI - FastAPI Backend Server
 Main entry point for REST endpoints and real-time WebSocket analysis pipeline.
 """
 
+import asyncio
 import logging
 from typing import Optional
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
@@ -11,9 +12,13 @@ import torch
 import cv2
 import numpy as np
 
+from fastapi.staticfiles import StaticFiles
 from backend.app.config import settings
 from backend.app.websocket_routes import router as websocket_router
 from backend.app.vision import vision_engine
+from backend.app.db import init_db, UPLOADS_DIR
+from backend.app.routes_gallery import router as gallery_router
+from backend.app.routes_auth import router as auth_router
 
 # Configure root logger
 logging.basicConfig(
@@ -21,6 +26,9 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 logger = logging.getLogger("framesense.main")
+
+# Initialize SQLite database
+init_db()
 
 # Initialize FastAPI application
 app = FastAPI(
@@ -38,8 +46,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount WebSocket pipeline router
+# Mount Static Uploads Folder
+app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
+
+# Mount Routers
 app.include_router(websocket_router)
+app.include_router(gallery_router)
+app.include_router(auth_router)
 
 
 @app.get("/health")
@@ -78,7 +91,7 @@ async def analyze_uploaded_image(
             raise HTTPException(status_code=400, detail="Invalid or unsupported image file.")
 
         h, w = frame.shape[:2]
-        telemetry = vision_engine.analyze_frame(frame)
+        telemetry = await asyncio.to_thread(vision_engine.analyze_frame, frame)
 
         score = telemetry.score
         grade = "A+" if score >= 90 else "A" if score >= 75 else "B" if score >= 50 else "Needs Retake"
@@ -99,6 +112,11 @@ async def analyze_uploaded_image(
             "sub_scores": telemetry.sub_scores,
             "device": "NVIDIA GeForce RTX 3050 CUDA" if torch.cuda.is_available() else "Host CPU",
             "has_subject": telemetry.face_box is not None,
+            "shot_type": telemetry.shot_type,
+            "shot_description": telemetry.shot_description,
+            "estimated_distance_ft": telemetry.estimated_distance_ft,
+            "estimated_distance_m": telemetry.estimated_distance_m,
+            "all_faces": telemetry.all_faces,
         }
     except HTTPException:
         raise

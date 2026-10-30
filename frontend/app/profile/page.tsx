@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Navbar from '@/components/Navbar'
 import Sidebar from '@/components/Sidebar'
+import Footer from '@/components/Footer'
 import {
   User,
   Mail,
@@ -25,7 +26,7 @@ import {
   Home,
   Building,
   Navigation,
-  Compass
+  Compass,
 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { COUNTRIES_DATA } from '@/lib/locationsData'
@@ -302,56 +303,56 @@ export default function ProfilePage() {
   const fullNameDisplay = [firstName, middleName, lastName].filter(Boolean).join(' ') || 'Dev Kumar Tarkar'
 
   return (
-    <div className="min-h-screen bg-[#070a0d] text-[#e7f0ed] selection:bg-[#d9ff5b] selection:text-[#070a0d]">
+    <div className="flex min-h-screen flex-col bg-[#F7F8F4] text-[#193B38] selection:bg-[#EAF1ED] selection:text-[#173F38]">
       <Navbar />
 
-      <main className="mx-auto flex max-w-[1720px] gap-8 px-5 py-7 lg:px-9">
+      <main className="mx-auto flex w-full max-w-[1720px] flex-1 gap-8 px-5 py-8 lg:px-9">
         <Sidebar />
 
-        <div className="min-w-0 flex-1 space-y-7">
+        <div className="min-w-0 flex-1 space-y-8">
           {/* Header */}
-          <div className="flex flex-col justify-between gap-4 border-b border-white/[.08] pb-6 sm:flex-row sm:items-center">
+          <div className="flex flex-col justify-between gap-4 border-b border-[#E3E9E5] pb-6 sm:flex-row sm:items-center">
             <div>
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#d9ff5b]/10 text-[#d9ff5b]">
-                  <User size={18} />
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF1ED] text-[#21866D] shadow-sm">
+                  <User size={20} />
                 </div>
-                <h1 className="text-xl font-bold tracking-tight text-white lg:text-2xl">
-                  User Profile &amp; Account Settings
+                <h1 className="font-serif text-2xl font-normal italic tracking-tight text-[#193B38] lg:text-3xl">
+                  Your Profile &amp; Settings
                 </h1>
               </div>
-              <p className="mt-1 text-xs text-[#738287]">
-                Manage your name, profile photo, social handles, and password security.
+              <p className="mt-1.5 text-xs text-[#647773]">
+                Manage your personal information, photography identity, and account preferences.
               </p>
             </div>
 
             <button
               onClick={logout}
-              className="flex items-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-xs font-semibold text-rose-400 transition hover:bg-rose-500/20"
+              className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-100"
             >
               <LogOut size={14} /> Sign Out
             </button>
           </div>
 
           {savedSuccess && (
-            <div className="flex items-center gap-2 rounded-2xl border border-[#d9ff5b]/30 bg-[#d9ff5b]/10 p-4 text-xs font-medium text-[#d9ff5b] shadow-lg animate-in fade-in duration-200">
-              <CheckCircle2 size={16} />
-              Profile updated successfully! All details have been synced to your active session.
+            <div className="flex items-center gap-2.5 rounded-2xl border border-[#21866D]/30 bg-[#EAF1ED] p-4 text-xs font-semibold text-[#173F38] shadow-sm animate-in fade-in duration-200">
+              <CheckCircle2 size={18} className="text-[#21866D] shrink-0" />
+              <span>Profile updated successfully! All details have been synced to your active session.</span>
             </div>
           )}
 
           {/* MAIN PROFILE FORM */}
-          <form onSubmit={handleSaveProfile} className="space-y-7">
+          <form onSubmit={handleSaveProfile} className="space-y-8">
             {/* SECTION 1: Profile Photo Card */}
-            <div className="rounded-3xl border border-white/[.08] bg-[#0e1417] p-7 shadow-sm">
-              <h2 className="text-sm font-bold text-white mb-1">Profile Photo</h2>
-              <p className="text-xs text-[#6e7d82] mb-5">
+            <div className="rounded-2xl border border-[#E3E9E5] bg-[#FFFFFF] p-7 shadow-sm">
+              <h2 className="text-sm font-bold text-[#193B38] mb-1">Profile Photo</h2>
+              <p className="text-xs text-[#647773] mb-6">
                 Your avatar appears on your viewfinder HUD, navbar, and exported evaluation cards.
               </p>
 
               <div className="flex flex-col sm:flex-row items-center gap-6">
                 <div className="relative group">
-                  <div className="h-24 w-24 rounded-full overflow-hidden border-2 border-[#d9ff5b]/40 shadow-[0_0_25px_rgba(217,255,91,.15)] bg-[#12191d] flex items-center justify-center">
+                  <div className="h-24 w-24 rounded-full overflow-hidden border-2 border-[#21866D]/20 shadow-md bg-[#F7F8F4] flex items-center justify-center">
                     {avatarUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
@@ -360,7 +361,7 @@ export default function ProfilePage() {
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <span className="text-3xl font-black text-[#d9ff5b]">
+                      <span className="text-2xl font-bold text-[#173F38]">
                         {user?.avatarText || 'DK'}
                       </span>
                     )}
@@ -369,9 +370,9 @@ export default function ProfilePage() {
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="absolute inset-0 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition text-[10px] text-white font-medium cursor-pointer"
+                    className="absolute inset-0 rounded-full bg-[#173F38]/70 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition text-[10px] text-white font-medium cursor-pointer"
                   >
-                    <Camera size={18} className="mb-0.5 text-[#d9ff5b]" />
+                    <Camera size={18} className="mb-0.5 text-white" />
                     Change
                   </button>
                 </div>
@@ -385,11 +386,11 @@ export default function ProfilePage() {
                     onChange={handleAvatarUpload}
                   />
 
-                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
+                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3">
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="flex items-center gap-1.5 rounded-xl bg-[#d9ff5b] px-4 py-2 text-xs font-bold text-[#070a0d] shadow-sm transition hover:bg-[#c7f347]"
+                      className="flex h-11 items-center gap-2 rounded-xl bg-[#173F38] px-5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#21866D]"
                     >
                       <Upload size={14} /> Upload New Photo
                     </button>
@@ -398,155 +399,149 @@ export default function ProfilePage() {
                       <button
                         type="button"
                         onClick={handleRemoveAvatar}
-                        className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[.04] px-3.5 py-2 text-xs font-medium text-[#8fa0a5] transition hover:bg-rose-500/10 hover:text-rose-400 hover:border-rose-500/30"
+                        className="flex h-11 items-center gap-2 rounded-xl border border-[#E3E9E5] bg-white px-4 text-xs font-medium text-[#647773] transition hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200"
                       >
-                        <Trash2 size={13} /> Remove
+                        <Trash2 size={14} /> Remove
                       </button>
                     )}
                   </div>
 
-                  <p className="text-[11px] text-[#556367]">
+                  <p className="text-[11px] text-[#647773]">
                     Recommended: Square JPG, PNG, or WebP. Max file size: 5MB.
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* SECTION 2: Personal Information (First, Middle, Last Name) */}
-            <div className="rounded-3xl border border-white/[.08] bg-[#0e1417] p-7 shadow-sm space-y-6">
+            {/* SECTION 2: Personal Information */}
+            <div className="rounded-2xl border border-[#E3E9E5] bg-[#FFFFFF] p-7 shadow-sm space-y-6">
               <div>
-                <h2 className="text-sm font-bold text-white">Personal Information</h2>
-                <p className="text-xs text-[#6e7d82] mt-0.5">
+                <h2 className="text-sm font-bold text-[#193B38]">Personal Information</h2>
+                <p className="text-xs text-[#647773] mt-0.5">
                   Update your official name, email, contact number, and personal details.
                 </p>
               </div>
 
               {/* Name split into First, Middle, and Last Name */}
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
                 {/* First Name */}
                 <div>
-                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#88999d]">
-                    First Name <span className="text-[#d9ff5b]">*</span>
+                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#647773]">
+                    First Name <span className="text-[#DC5C5C]">*</span>
                   </label>
-                  <div className="relative mt-1.5">
-                    <input
-                      type="text"
-                      required
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      placeholder="e.g. Dev"
-                      className="w-full rounded-xl border border-white/10 bg-[#12191d] py-2.5 px-3.5 text-xs text-white placeholder-[#4c595e] focus:border-[#d9ff5b] focus:outline-none"
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    required
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    placeholder="e.g. Dev"
+                    className="mt-1.5 h-12 w-full rounded-xl border border-[#E3E9E5] bg-white px-4 text-xs text-[#193B38] placeholder-[#8C9E9A] transition focus:border-[#21866D] focus:outline-none focus:ring-1 focus:ring-[#21866D]"
+                  />
                 </div>
 
                 {/* Middle Name */}
                 <div>
-                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#88999d]">
-                    Middle Name <span className="text-[#556367] font-normal">(Optional)</span>
+                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#647773]">
+                    Middle Name <span className="text-[#8C9E9A] font-normal">(Optional)</span>
                   </label>
-                  <div className="relative mt-1.5">
-                    <input
-                      type="text"
-                      value={middleName}
-                      onChange={(e) => setMiddleName(e.target.value)}
-                      placeholder="e.g. Kumar"
-                      className="w-full rounded-xl border border-white/10 bg-[#12191d] py-2.5 px-3.5 text-xs text-white placeholder-[#4c595e] focus:border-[#d9ff5b] focus:outline-none"
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    value={middleName}
+                    onChange={(e) => setMiddleName(e.target.value)}
+                    placeholder="e.g. Kumar"
+                    className="mt-1.5 h-12 w-full rounded-xl border border-[#E3E9E5] bg-white px-4 text-xs text-[#193B38] placeholder-[#8C9E9A] transition focus:border-[#21866D] focus:outline-none focus:ring-1 focus:ring-[#21866D]"
+                  />
                 </div>
 
                 {/* Last Name */}
                 <div>
-                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#88999d]">
-                    Last Name <span className="text-[#d9ff5b]">*</span>
+                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#647773]">
+                    Last Name <span className="text-[#DC5C5C]">*</span>
                   </label>
-                  <div className="relative mt-1.5">
-                    <input
-                      type="text"
-                      required
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      placeholder="e.g. Tarkar"
-                      className="w-full rounded-xl border border-white/10 bg-[#12191d] py-2.5 px-3.5 text-xs text-white placeholder-[#4c595e] focus:border-[#d9ff5b] focus:outline-none"
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    required
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    placeholder="e.g. Tarkar"
+                    className="mt-1.5 h-12 w-full rounded-xl border border-[#E3E9E5] bg-white px-4 text-xs text-[#193B38] placeholder-[#8C9E9A] transition focus:border-[#21866D] focus:outline-none focus:ring-1 focus:ring-[#21866D]"
+                  />
                 </div>
               </div>
 
-              {/* Email, Phone, DOB, Gender, Location */}
+              {/* Email, Phone, DOB, Gender */}
               <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                 {/* Email Address */}
                 <div>
                   <div className="flex items-center justify-between">
-                    <label className="text-[11px] font-semibold uppercase tracking-wider text-[#88999d]">
+                    <label className="text-[11px] font-semibold uppercase tracking-wider text-[#647773]">
                       Email Address
                     </label>
-                    <span className="flex items-center gap-1 text-[10px] text-[#10b981] font-semibold">
-                      <ShieldCheck size={12} /> Verified
+                    <span className="flex items-center gap-1 text-[11px] text-[#16A085] font-semibold">
+                      <ShieldCheck size={13} /> Verified
                     </span>
                   </div>
                   <div className="relative mt-1.5">
-                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-[#5e6d72]">
-                      <Mail size={15} />
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-[#647773]">
+                      <Mail size={16} />
                     </div>
                     <input
                       type="email"
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="dev.kumar@gla.ac.in"
-                      className="w-full rounded-xl border border-white/10 bg-[#12191d] py-2.5 pr-4 pl-10 text-xs text-white placeholder-[#4c595e] focus:border-[#d9ff5b] focus:outline-none"
+                      placeholder="dev.kumar@example.com"
+                      className="h-12 w-full rounded-xl border border-[#E3E9E5] bg-white pr-4 pl-11 text-xs text-[#193B38] placeholder-[#8C9E9A] transition focus:border-[#21866D] focus:outline-none focus:ring-1 focus:ring-[#21866D]"
                     />
                   </div>
                 </div>
 
                 {/* Phone Number */}
                 <div>
-                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#88999d]">
+                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#647773]">
                     Phone Number
                   </label>
                   <div className="relative mt-1.5">
-                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-[#5e6d72]">
-                      <Phone size={15} />
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-[#647773]">
+                      <Phone size={16} />
                     </div>
                     <input
                       type="tel"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="+91 98765 43210"
-                      className="w-full rounded-xl border border-white/10 bg-[#12191d] py-2.5 pr-4 pl-10 text-xs text-white placeholder-[#4c595e] focus:border-[#d9ff5b] focus:outline-none"
+                      className="h-12 w-full rounded-xl border border-[#E3E9E5] bg-white pr-4 pl-11 text-xs text-[#193B38] placeholder-[#8C9E9A] transition focus:border-[#21866D] focus:outline-none focus:ring-1 focus:ring-[#21866D]"
                     />
                   </div>
                 </div>
 
                 {/* Date of Birth */}
                 <div>
-                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#88999d]">
+                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#647773]">
                     Date of Birth
                   </label>
                   <div className="relative mt-1.5">
-                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-[#5e6d72]">
-                      <Calendar size={15} />
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-[#647773]">
+                      <Calendar size={16} />
                     </div>
                     <input
                       type="date"
                       value={dob}
                       onChange={(e) => setDob(e.target.value)}
-                      className="w-full rounded-xl border border-white/10 bg-[#12191d] py-2.5 pr-4 pl-10 text-xs text-white focus:border-[#d9ff5b] focus:outline-none"
+                      className="h-12 w-full rounded-xl border border-[#E3E9E5] bg-white pr-4 pl-11 text-xs text-[#193B38] transition focus:border-[#21866D] focus:outline-none focus:ring-1 focus:ring-[#21866D]"
                     />
                   </div>
                 </div>
 
                 {/* Gender */}
                 <div>
-                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#88999d]">
+                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#647773]">
                     Gender
                   </label>
                   <select
                     value={gender}
                     onChange={(e) => setGender(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-white/10 bg-[#12191d] p-2.5 text-xs text-white focus:border-[#d9ff5b] focus:outline-none"
+                    className="mt-1.5 h-12 w-full rounded-xl border border-[#E3E9E5] bg-white px-4 text-xs text-[#193B38] transition focus:border-[#21866D] focus:outline-none focus:ring-1 focus:ring-[#21866D]"
                   >
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
@@ -554,12 +549,11 @@ export default function ProfilePage() {
                     <option value="Prefer not to say">Prefer not to say</option>
                   </select>
                 </div>
-
               </div>
 
               {/* Bio / About Me */}
               <div>
-                <label className="text-[11px] font-semibold uppercase tracking-wider text-[#88999d]">
+                <label className="text-[11px] font-semibold uppercase tracking-wider text-[#647773]">
                   Bio / About Me
                 </label>
                 <textarea
@@ -567,66 +561,66 @@ export default function ProfilePage() {
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
                   placeholder="Share a short bio or photography interest..."
-                  className="mt-1.5 w-full rounded-xl border border-white/10 bg-[#12191d] p-3 text-xs text-white placeholder-[#4c595e] focus:border-[#d9ff5b] focus:outline-none"
+                  className="mt-1.5 w-full rounded-xl border border-[#E3E9E5] bg-white p-4 text-xs text-[#193B38] placeholder-[#8C9E9A] transition focus:border-[#21866D] focus:outline-none focus:ring-1 focus:ring-[#21866D]"
                 />
               </div>
             </div>
 
-            {/* SECTION 3: Residential Address & Location (Detailed Breakdown) */}
-            <div className="rounded-3xl border border-white/[.08] bg-[#0e1417] p-7 shadow-sm space-y-6">
+            {/* SECTION 3: Residential Address & Location Details */}
+            <div className="rounded-2xl border border-[#E3E9E5] bg-[#FFFFFF] p-7 shadow-sm space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div>
-                  <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                    <MapPin size={16} className="text-[#d9ff5b]" />
+                  <h2 className="text-sm font-bold text-[#193B38] flex items-center gap-2">
+                    <MapPin size={16} className="text-[#21866D]" />
                     Address &amp; Location Details
                   </h2>
-                  <p className="text-xs text-[#6e7d82] mt-0.5">
+                  <p className="text-xs text-[#647773] mt-0.5">
                     Individual breakdown for house/apartment, street/landmark, city, state, country, and postal code.
                   </p>
                 </div>
                 {/* Live Formatted Summary Pill */}
-                <div className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-[#12191d] px-3 py-1 text-[11px] text-[#a0b0b5]">
-                  <Globe size={12} className="text-[#d9ff5b]" />
+                <div className="inline-flex items-center gap-1.5 rounded-full border border-[#E3E9E5] bg-[#F7F8F4] px-3.5 py-1 text-xs text-[#647773]">
+                  <Globe size={13} className="text-[#21866D]" />
                   <span>{[city, stateName, country].filter(Boolean).join(', ') || 'Location Pending'}</span>
                 </div>
               </div>
 
-              {/* Row 1: House No. & Street / Landmark */}
+              {/* Row 1: House No. & Street */}
               <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                 {/* House No / Apartment */}
                 <div>
-                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#88999d] flex items-center gap-1.5">
-                    <Home size={13} className="text-[#d9ff5b]" /> House No. / Flat / Apartment
+                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#647773] flex items-center gap-1.5">
+                    <Home size={13} className="text-[#21866D]" /> House No. / Flat / Apartment
                   </label>
                   <div className="relative mt-1.5">
-                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-[#5e6d72]">
-                      <Home size={14} />
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-[#647773]">
+                      <Home size={15} />
                     </div>
                     <input
                       type="text"
                       value={houseNo}
                       onChange={(e) => setHouseNo(e.target.value)}
                       placeholder="e.g. Flat 402, Block B / H.No. 128"
-                      className="w-full rounded-xl border border-white/10 bg-[#12191d] py-2.5 pr-4 pl-10 text-xs text-white placeholder-[#4c595e] focus:border-[#d9ff5b] focus:outline-none"
+                      className="h-12 w-full rounded-xl border border-[#E3E9E5] bg-white pr-4 pl-11 text-xs text-[#193B38] placeholder-[#8C9E9A] transition focus:border-[#21866D] focus:outline-none focus:ring-1 focus:ring-[#21866D]"
                     />
                   </div>
                 </div>
 
                 {/* Street / Landmark */}
                 <div>
-                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#88999d] flex items-center gap-1.5">
-                    <Navigation size={13} className="text-[#38bdf8]" /> Street / Area / Landmark
+                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#647773] flex items-center gap-1.5">
+                    <Navigation size={13} className="text-[#21866D]" /> Street / Area / Landmark
                   </label>
                   <div className="relative mt-1.5">
-                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-[#5e6d72]">
-                      <Navigation size={14} />
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-[#647773]">
+                      <Navigation size={15} />
                     </div>
                     <input
                       type="text"
                       value={street}
                       onChange={(e) => setStreet(e.target.value)}
                       placeholder="e.g. Chaumuhan, NH-19 (Near GLA Campus)"
-                      className="w-full rounded-xl border border-white/10 bg-[#12191d] py-2.5 pr-4 pl-10 text-xs text-white placeholder-[#4c595e] focus:border-[#d9ff5b] focus:outline-none"
+                      className="h-12 w-full rounded-xl border border-[#E3E9E5] bg-white pr-4 pl-11 text-xs text-[#193B38] placeholder-[#8C9E9A] transition focus:border-[#21866D] focus:outline-none focus:ring-1 focus:ring-[#21866D]"
                     />
                   </div>
                 </div>
@@ -636,22 +630,22 @@ export default function ProfilePage() {
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
                 {/* 1. Country Selection */}
                 <div>
-                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#88999d] flex items-center gap-1.5">
-                    <Globe size={13} className="text-[#34d399]" /> 1. Country <span className="text-[#d9ff5b]">*</span>
+                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#647773] flex items-center gap-1.5">
+                    <Globe size={13} className="text-[#21866D]" /> 1. Country <span className="text-[#DC5C5C]">*</span>
                   </label>
                   <div className="relative mt-1.5">
                     <select
                       value={isCustomCountry ? '__OTHER__' : country}
                       onChange={(e) => handleCountryChange(e.target.value)}
-                      className="w-full rounded-xl border border-white/10 bg-[#12191d] p-2.5 text-xs text-white focus:border-[#d9ff5b] focus:outline-none"
+                      className="h-12 w-full rounded-xl border border-[#E3E9E5] bg-white px-3.5 text-xs text-[#193B38] transition focus:border-[#21866D] focus:outline-none focus:ring-1 focus:ring-[#21866D]"
                     >
                       <option value="" disabled>Select Country</option>
                       {COUNTRIES_DATA.map((c) => (
-                        <option key={c.code} value={c.name} className="bg-[#12191d] text-white">
+                        <option key={c.code} value={c.name}>
                           {c.name}
                         </option>
                       ))}
-                      <option value="__OTHER__" className="bg-[#12191d] text-[#d9ff5b]">
+                      <option value="__OTHER__">
                         + Other / Custom Country
                       </option>
                     </select>
@@ -662,22 +656,22 @@ export default function ProfilePage() {
                       value={country}
                       onChange={(e) => setCountry(e.target.value)}
                       placeholder="Type country name..."
-                      className="mt-2 w-full rounded-xl border border-[#d9ff5b]/40 bg-[#12191d] py-2 px-3 text-xs text-white placeholder-[#4c595e] focus:border-[#d9ff5b] focus:outline-none"
+                      className="mt-2 h-11 w-full rounded-xl border border-[#21866D] bg-white px-3 text-xs text-[#193B38] placeholder-[#8C9E9A] focus:outline-none"
                     />
                   )}
                 </div>
 
                 {/* 2. State / Province Selection */}
                 <div>
-                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#88999d] flex items-center gap-1.5">
-                    <MapPin size={13} className="text-[#f59e0b]" /> 2. State / Province <span className="text-[#d9ff5b]">*</span>
+                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#647773] flex items-center gap-1.5">
+                    <MapPin size={13} className="text-[#21866D]" /> 2. State / Province <span className="text-[#DC5C5C]">*</span>
                   </label>
                   <div className="relative mt-1.5">
                     <select
                       disabled={!country && !isCustomCountry}
                       value={isCustomState ? '__OTHER__' : stateName}
                       onChange={(e) => handleStateChange(e.target.value)}
-                      className="w-full rounded-xl border border-white/10 bg-[#12191d] p-2.5 text-xs text-white focus:border-[#d9ff5b] focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="h-12 w-full rounded-xl border border-[#E3E9E5] bg-white px-3.5 text-xs text-[#193B38] transition focus:border-[#21866D] focus:outline-none focus:ring-1 focus:ring-[#21866D] disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       {!country && !isCustomCountry ? (
                         <option value="">Select country first...</option>
@@ -685,11 +679,11 @@ export default function ProfilePage() {
                         <>
                           <option value="" disabled>Select State</option>
                           {availableStates.map((s) => (
-                            <option key={s.name} value={s.name} className="bg-[#12191d] text-white">
+                            <option key={s.name} value={s.name}>
                               {s.name}
                             </option>
                           ))}
-                          <option value="__OTHER__" className="bg-[#12191d] text-[#d9ff5b]">
+                          <option value="__OTHER__">
                             + Other / Custom State
                           </option>
                         </>
@@ -702,22 +696,22 @@ export default function ProfilePage() {
                       value={stateName}
                       onChange={(e) => setStateName(e.target.value)}
                       placeholder="Type state/province name..."
-                      className="mt-2 w-full rounded-xl border border-[#d9ff5b]/40 bg-[#12191d] py-2 px-3 text-xs text-white placeholder-[#4c595e] focus:border-[#d9ff5b] focus:outline-none"
+                      className="mt-2 h-11 w-full rounded-xl border border-[#21866D] bg-white px-3 text-xs text-[#193B38] placeholder-[#8C9E9A] focus:outline-none"
                     />
                   )}
                 </div>
 
                 {/* 3. City Selection */}
                 <div>
-                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#88999d] flex items-center gap-1.5">
-                    <Building size={13} className="text-[#a78bfa]" /> 3. City <span className="text-[#d9ff5b]">*</span>
+                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#647773] flex items-center gap-1.5">
+                    <Building size={13} className="text-[#21866D]" /> 3. City <span className="text-[#DC5C5C]">*</span>
                   </label>
                   <div className="relative mt-1.5">
                     <select
                       disabled={(!stateName && !isCustomState) || (!country && !isCustomCountry)}
                       value={isCustomCity ? '__OTHER__' : city}
                       onChange={(e) => handleCityChange(e.target.value)}
-                      className="w-full rounded-xl border border-white/10 bg-[#12191d] p-2.5 text-xs text-white focus:border-[#d9ff5b] focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="h-12 w-full rounded-xl border border-[#E3E9E5] bg-white px-3.5 text-xs text-[#193B38] transition focus:border-[#21866D] focus:outline-none focus:ring-1 focus:ring-[#21866D] disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       {!stateName && !isCustomState ? (
                         <option value="">Select state first...</option>
@@ -725,11 +719,11 @@ export default function ProfilePage() {
                         <>
                           <option value="" disabled>Select City</option>
                           {availableCities.map((ct) => (
-                            <option key={ct} value={ct} className="bg-[#12191d] text-white">
+                            <option key={ct} value={ct}>
                               {ct}
                             </option>
                           ))}
-                          <option value="__OTHER__" className="bg-[#12191d] text-[#d9ff5b]">
+                          <option value="__OTHER__">
                             + Other / Custom City
                           </option>
                         </>
@@ -742,26 +736,26 @@ export default function ProfilePage() {
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
                       placeholder="Type city name..."
-                      className="mt-2 w-full rounded-xl border border-[#d9ff5b]/40 bg-[#12191d] py-2 px-3 text-xs text-white placeholder-[#4c595e] focus:border-[#d9ff5b] focus:outline-none"
+                      className="mt-2 h-11 w-full rounded-xl border border-[#21866D] bg-white px-3 text-xs text-[#193B38] placeholder-[#8C9E9A] focus:outline-none"
                     />
                   )}
                 </div>
 
                 {/* 4. PIN / Postal Code */}
                 <div>
-                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#88999d] flex items-center gap-1.5">
-                    <Compass size={13} className="text-[#f43f5e]" /> 4. PIN / Postal Code
+                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#647773] flex items-center gap-1.5">
+                    <Compass size={13} className="text-[#21866D]" /> 4. PIN / Postal Code
                   </label>
                   <div className="relative mt-1.5">
-                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-[#5e6d72]">
-                      <Compass size={14} />
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-[#647773]">
+                      <Compass size={15} />
                     </div>
                     <input
                       type="text"
                       value={pincode}
                       onChange={(e) => setPincode(e.target.value)}
                       placeholder="e.g. 281406"
-                      className="w-full rounded-xl border border-white/10 bg-[#12191d] py-2.5 pr-4 pl-10 text-xs text-white placeholder-[#4c595e] focus:border-[#d9ff5b] focus:outline-none"
+                      className="h-12 w-full rounded-xl border border-[#E3E9E5] bg-white pr-4 pl-11 text-xs text-[#193B38] placeholder-[#8C9E9A] transition focus:border-[#21866D] focus:outline-none focus:ring-1 focus:ring-[#21866D]"
                     />
                   </div>
                 </div>
@@ -769,11 +763,11 @@ export default function ProfilePage() {
 
               {/* Complete Address Live Preview Box */}
               {(houseNo || street || city || stateName || pincode || country) && (
-                <div className="rounded-2xl border border-white/5 bg-[#12191d]/70 p-3.5 flex items-start gap-2.5 text-xs text-[#8e9fa4]">
-                  <MapPin size={15} className="mt-0.5 shrink-0 text-[#d9ff5b]" />
+                <div className="rounded-2xl border border-[#21866D]/20 bg-[#EAF1ED] p-4 flex items-start gap-3 text-xs text-[#193B38]">
+                  <MapPin size={16} className="mt-0.5 shrink-0 text-[#21866D]" />
                   <div>
-                    <span className="font-semibold text-white mr-1.5">Full Address Preview:</span>
-                    <span>
+                    <span className="font-semibold text-[#173F38] mr-2">Full Address Preview:</span>
+                    <span className="text-[#193B38]">
                       {[houseNo, street, city, stateName, pincode ? `- ${pincode}` : '', country]
                         .filter(Boolean)
                         .join(', ')}
@@ -784,13 +778,13 @@ export default function ProfilePage() {
             </div>
 
             {/* SECTION 4: Social & Portfolio Links */}
-            <div className="rounded-3xl border border-white/[.08] bg-[#0e1417] p-7 shadow-sm space-y-6">
+            <div className="rounded-2xl border border-[#E3E9E5] bg-[#FFFFFF] p-7 shadow-sm space-y-6">
               <div>
-                <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Globe size={16} className="text-[#d9ff5b]" />
+                <h2 className="text-sm font-bold text-[#193B38] flex items-center gap-2">
+                  <Globe size={16} className="text-[#21866D]" />
                   Social &amp; Portfolio Links
                 </h2>
-                <p className="text-xs text-[#6e7d82] mt-0.5">
+                <p className="text-xs text-[#647773] mt-0.5">
                   Connect your online photography portfolio, social profiles, and creative handles.
                 </p>
               </div>
@@ -798,119 +792,111 @@ export default function ProfilePage() {
               <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                 {/* Instagram */}
                 <div>
-                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#88999d] flex items-center gap-1.5">
-                    <InstagramIcon size={13} className="text-[#ec4899]" /> Instagram Handle
+                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#647773] flex items-center gap-1.5">
+                    <InstagramIcon size={14} className="text-[#21866D]" /> Instagram Handle
                   </label>
-                  <div className="relative mt-1.5">
-                    <input
-                      type="text"
-                      value={instagram}
-                      onChange={(e) => setInstagram(e.target.value)}
-                      placeholder="@devkumar_clicks"
-                      className="w-full rounded-xl border border-white/10 bg-[#12191d] py-2.5 px-3.5 text-xs text-white placeholder-[#4c595e] focus:border-[#d9ff5b] focus:outline-none"
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    value={instagram}
+                    onChange={(e) => setInstagram(e.target.value)}
+                    placeholder="@username"
+                    className="mt-1.5 h-12 w-full rounded-xl border border-[#E3E9E5] bg-white px-4 text-xs text-[#193B38] placeholder-[#8C9E9A] transition focus:border-[#21866D] focus:outline-none focus:ring-1 focus:ring-[#21866D]"
+                  />
                 </div>
 
                 {/* Portfolio Website */}
                 <div>
-                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#88999d] flex items-center gap-1.5">
-                    <Globe size={13} className="text-[#38bdf8]" /> Portfolio / Website URL
+                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#647773] flex items-center gap-1.5">
+                    <Globe size={14} className="text-[#21866D]" /> Portfolio / Website URL
                   </label>
-                  <div className="relative mt-1.5">
-                    <input
-                      type="url"
-                      value={portfolio}
-                      onChange={(e) => setPortfolio(e.target.value)}
-                      placeholder="https://myportfolio.com"
-                      className="w-full rounded-xl border border-white/10 bg-[#12191d] py-2.5 px-3.5 text-xs text-white placeholder-[#4c595e] focus:border-[#d9ff5b] focus:outline-none"
-                    />
-                  </div>
+                  <input
+                    type="url"
+                    value={portfolio}
+                    onChange={(e) => setPortfolio(e.target.value)}
+                    placeholder="https://myportfolio.com"
+                    className="mt-1.5 h-12 w-full rounded-xl border border-[#E3E9E5] bg-white px-4 text-xs text-[#193B38] placeholder-[#8C9E9A] transition focus:border-[#21866D] focus:outline-none focus:ring-1 focus:ring-[#21866D]"
+                  />
                 </div>
 
                 {/* Twitter / X */}
                 <div>
-                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#88999d] flex items-center gap-1.5">
-                    <TwitterIcon size={13} className="text-[#38bdf8]" /> Twitter (X) Profile
+                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#647773] flex items-center gap-1.5">
+                    <TwitterIcon size={14} className="text-[#21866D]" /> Twitter (X) Profile
                   </label>
-                  <div className="relative mt-1.5">
-                    <input
-                      type="text"
-                      value={twitter}
-                      onChange={(e) => setTwitter(e.target.value)}
-                      placeholder="@devkumar_ai"
-                      className="w-full rounded-xl border border-white/10 bg-[#12191d] py-2.5 px-3.5 text-xs text-white placeholder-[#4c595e] focus:border-[#d9ff5b] focus:outline-none"
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    value={twitter}
+                    onChange={(e) => setTwitter(e.target.value)}
+                    placeholder="@username"
+                    className="mt-1.5 h-12 w-full rounded-xl border border-[#E3E9E5] bg-white px-4 text-xs text-[#193B38] placeholder-[#8C9E9A] transition focus:border-[#21866D] focus:outline-none focus:ring-1 focus:ring-[#21866D]"
+                  />
                 </div>
 
                 {/* LinkedIn */}
                 <div>
-                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#88999d] flex items-center gap-1.5">
-                    <LinkedinIcon size={13} className="text-[#0ea5e9]" /> LinkedIn Profile
+                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#647773] flex items-center gap-1.5">
+                    <LinkedinIcon size={14} className="text-[#21866D]" /> LinkedIn Profile
                   </label>
-                  <div className="relative mt-1.5">
-                    <input
-                      type="url"
-                      value={linkedin}
-                      onChange={(e) => setLinkedin(e.target.value)}
-                      placeholder="https://linkedin.com/in/devkumartarkar"
-                      className="w-full rounded-xl border border-white/10 bg-[#12191d] py-2.5 px-3.5 text-xs text-white placeholder-[#4c595e] focus:border-[#d9ff5b] focus:outline-none"
-                    />
-                  </div>
+                  <input
+                    type="url"
+                    value={linkedin}
+                    onChange={(e) => setLinkedin(e.target.value)}
+                    placeholder="https://linkedin.com/in/username"
+                    className="mt-1.5 h-12 w-full rounded-xl border border-[#E3E9E5] bg-white px-4 text-xs text-[#193B38] placeholder-[#8C9E9A] transition focus:border-[#21866D] focus:outline-none focus:ring-1 focus:ring-[#21866D]"
+                  />
                 </div>
               </div>
             </div>
 
             {/* Save Profile Button */}
-            <div className="flex items-center justify-between border-t border-white/[.08] pt-5">
-              <span className="text-[11px] text-[#5e6e73]">
-                Profile edits immediately sync to your active session.
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-[#E3E9E5] pt-6">
+              <span className="text-xs text-[#647773]">
+                Profile edits immediately sync to your active session and local database.
               </span>
               <button
                 type="submit"
-                className="flex items-center gap-2 rounded-xl bg-[#d9ff5b] px-6 py-2.5 text-xs font-bold text-[#070a0d] shadow-[0_0_20px_rgba(217,255,91,.25)] transition hover:bg-[#c7f347]"
+                className="flex h-12 items-center gap-2 rounded-xl bg-[#173F38] px-7 text-xs font-semibold text-white shadow-sm transition hover:bg-[#21866D]"
               >
-                <Save size={14} /> Save Profile Changes
+                <Save size={15} /> Save Profile Changes
               </button>
             </div>
           </form>
 
           {/* SECTION 5: Account Security (Change Password) */}
-          <div className="rounded-3xl border border-white/[.08] bg-[#0e1417] p-7 shadow-sm space-y-6">
+          <div className="rounded-2xl border border-[#E3E9E5] bg-[#FFFFFF] p-7 shadow-sm space-y-6">
             <div>
-              <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                <Lock size={16} className="text-[#38bdf8]" />
+              <h2 className="text-sm font-bold text-[#193B38] flex items-center gap-2">
+                <Lock size={16} className="text-[#21866D]" />
                 Account Security &amp; Password
               </h2>
-              <p className="text-xs text-[#6e7d82] mt-0.5">
-                Update your account password to ensure your studio sessions remain secure.
+              <p className="text-xs text-[#647773] mt-0.5">
+                Update your account password to ensure your photography studio credentials remain protected.
               </p>
             </div>
 
             {passwordError && (
-              <div className="flex items-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3.5 text-xs text-rose-400">
-                <AlertCircle size={15} />
-                {passwordError}
+              <div className="flex items-center gap-2.5 rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs font-medium text-rose-700">
+                <AlertCircle size={16} className="shrink-0" />
+                <span>{passwordError}</span>
               </div>
             )}
 
             {passwordSuccess && (
-              <div className="flex items-center gap-2 rounded-xl border border-[#10b981]/30 bg-[#10b981]/10 p-3.5 text-xs text-[#10b981]">
-                <CheckCircle2 size={15} />
-                Password updated successfully! Your account credentials have been refreshed.
+              <div className="flex items-center gap-2.5 rounded-xl border border-[#21866D]/30 bg-[#EAF1ED] p-4 text-xs font-medium text-[#173F38]">
+                <CheckCircle2 size={16} className="text-[#21866D] shrink-0" />
+                <span>Password updated successfully! Your account credentials have been refreshed.</span>
               </div>
             )}
 
-            <form onSubmit={handleUpdatePassword} className="space-y-4">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <form onSubmit={handleUpdatePassword} className="space-y-5">
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
                 {/* Current Password */}
                 <div>
-                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#88999d]">
+                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#647773]">
                     Current Password
                   </label>
                   <div className="relative mt-1.5">
-                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-[#5e6d72]">
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-[#647773]">
                       <KeyRound size={15} />
                     </div>
                     <input
@@ -918,25 +904,25 @@ export default function ProfilePage() {
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
                       placeholder="••••••••••••"
-                      className="w-full rounded-xl border border-white/10 bg-[#12191d] py-2.5 pr-10 pl-10 text-xs text-white placeholder-[#4c595e] focus:border-[#d9ff5b] focus:outline-none"
+                      className="h-12 w-full rounded-xl border border-[#E3E9E5] bg-white pr-11 pl-11 text-xs text-[#193B38] placeholder-[#8C9E9A] transition focus:border-[#21866D] focus:outline-none focus:ring-1 focus:ring-[#21866D]"
                     />
                     <button
                       type="button"
                       onClick={() => setShowCurrentPass(!showCurrentPass)}
-                      className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-[#5e6d72] hover:text-white"
+                      className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-[#647773] hover:text-[#193B38]"
                     >
-                      {showCurrentPass ? <EyeOff size={15} /> : <Eye size={15} />}
+                      {showCurrentPass ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
                 </div>
 
                 {/* New Password */}
                 <div>
-                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#88999d]">
+                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#647773]">
                     New Password
                   </label>
                   <div className="relative mt-1.5">
-                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-[#5e6d72]">
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-[#647773]">
                       <Lock size={15} />
                     </div>
                     <input
@@ -944,25 +930,25 @@ export default function ProfilePage() {
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="••••••••••••"
-                      className="w-full rounded-xl border border-white/10 bg-[#12191d] py-2.5 pr-10 pl-10 text-xs text-white placeholder-[#4c595e] focus:border-[#d9ff5b] focus:outline-none"
+                      className="h-12 w-full rounded-xl border border-[#E3E9E5] bg-white pr-11 pl-11 text-xs text-[#193B38] placeholder-[#8C9E9A] transition focus:border-[#21866D] focus:outline-none focus:ring-1 focus:ring-[#21866D]"
                     />
                     <button
                       type="button"
                       onClick={() => setShowNewPass(!showNewPass)}
-                      className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-[#5e6d72] hover:text-white"
+                      className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-[#647773] hover:text-[#193B38]"
                     >
-                      {showNewPass ? <EyeOff size={15} /> : <Eye size={15} />}
+                      {showNewPass ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
                 </div>
 
                 {/* Confirm New Password */}
                 <div>
-                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#88999d]">
+                  <label className="text-[11px] font-semibold uppercase tracking-wider text-[#647773]">
                     Confirm New Password
                   </label>
                   <div className="relative mt-1.5">
-                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-[#5e6d72]">
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-[#647773]">
                       <Lock size={15} />
                     </div>
                     <input
@@ -970,14 +956,14 @@ export default function ProfilePage() {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="••••••••••••"
-                      className="w-full rounded-xl border border-white/10 bg-[#12191d] py-2.5 pr-10 pl-10 text-xs text-white placeholder-[#4c595e] focus:border-[#d9ff5b] focus:outline-none"
+                      className="h-12 w-full rounded-xl border border-[#E3E9E5] bg-white pr-11 pl-11 text-xs text-[#193B38] placeholder-[#8C9E9A] transition focus:border-[#21866D] focus:outline-none focus:ring-1 focus:ring-[#21866D]"
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPass(!showConfirmPass)}
-                      className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-[#5e6d72] hover:text-white"
+                      className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-[#647773] hover:text-[#193B38]"
                     >
-                      {showConfirmPass ? <EyeOff size={15} /> : <Eye size={15} />}
+                      {showConfirmPass ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
                 </div>
@@ -987,7 +973,7 @@ export default function ProfilePage() {
                 <button
                   type="submit"
                   disabled={isUpdatingPassword}
-                  className="flex items-center gap-2 rounded-xl border border-white/15 bg-white/[.05] px-5 py-2.5 text-xs font-semibold text-white transition hover:bg-white/10 hover:border-white/30 disabled:opacity-50"
+                  className="flex h-11 items-center gap-2 rounded-xl bg-[#173F38] px-6 text-xs font-semibold text-white shadow-sm transition hover:bg-[#21866D] disabled:opacity-50"
                 >
                   <KeyRound size={14} />
                   {isUpdatingPassword ? 'Updating...' : 'Update Password'}
@@ -997,6 +983,8 @@ export default function ProfilePage() {
           </div>
         </div>
       </main>
+
+      <Footer />
     </div>
   )
 }

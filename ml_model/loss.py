@@ -32,8 +32,8 @@ class EMDLoss(nn.Module):
         # Compute normalized L_r distance between CDFs
         diff = torch.abs(cdf_target - cdf_estimate)
         if self.r == 2.0:
-            loss = torch.sqrt(torch.mean(torch.pow(diff, 2), dim=-1))
+            loss = torch.sqrt(torch.mean(torch.pow(diff, 2), dim=-1) + 1e-8)
         else:
-            loss = torch.pow(torch.mean(torch.pow(diff, self.r), dim=-1), 1.0 / self.r)
+            loss = torch.pow(torch.mean(torch.pow(diff, self.r), dim=-1) + 1e-8, 1.0 / self.r)
 
         return torch.mean(loss)

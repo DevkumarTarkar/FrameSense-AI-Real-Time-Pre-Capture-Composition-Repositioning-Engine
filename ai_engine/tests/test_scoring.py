@@ -164,3 +164,90 @@ def test_weights_sum_to_one():
     """Mathematical verification that scoring weights strictly sum to 1.0."""
     total_weight = WEIGHT_THIRDS + WEIGHT_HEADROOM + WEIGHT_TILT + WEIGHT_DISTANCE
     assert pytest.approx(total_weight) == 1.0
+
+
+def test_face_lighting_backlight_detection():
+    """Simulate a bright background with a dark face to ensure backlight warning triggers."""
+    import numpy as np
+    from ai_engine.lighting import evaluate_face_lighting
+
+    # Create 400x400 frame: bright background (220)
+    frame = np.full((400, 400, 3), 220, dtype=np.uint8)
+    # Dark face region (40)
+    face_box = [100.0, 100.0, 300.0, 300.0]
+    frame[100:300, 100:300] = 40
+
+    score, lum, status, msg = evaluate_face_lighting(frame, face_box)
+    assert score < 1.0
+    assert status == "backlight"
+    assert "Backlight" in msg
+
+
+def test_face_lighting_balanced():
+    """Balanced lighting (120 face, 130 background) should return score 1.0."""
+    import numpy as np
+    from ai_engine.lighting import evaluate_face_lighting
+
+    frame = np.full((400, 400, 3), 130, dtype=np.uint8)
+    face_box = [100.0, 100.0, 300.0, 300.0]
+    frame[100:300, 100:300] = 120
+
+    score, lum, status, msg = evaluate_face_lighting(frame, face_box)
+    assert score == 1.0
+    assert status == "balanced"
+    assert msg is None
+
+
+def test_camera_perspective_low_angle():
+    """Eyes compressed near top of face box (< 0.27) should trigger low-angle chin warning."""
+    from ai_engine.perspective import evaluate_camera_perspective
+
+    face_box = [100.0, 100.0, 300.0, 300.0]  # height = 200
+    eye_y = 120.0  # (120 - 100) / 200 = 0.10 (abnormally low camera angle)
+
+    score, status, msg = evaluate_camera_perspective(face_box, eye_y=eye_y)
+    assert score < 1.0
+    assert status == "low_angle"
+    assert "Raise camera to eye level" in msg
+
+
+def test_camera_perspective_eye_level():
+    """Eyes at 40% height of face box should be recognized as optimal eye level."""
+    from ai_engine.perspective import evaluate_camera_perspective
+
+    face_box = [100.0, 100.0, 300.0, 300.0]  # height = 200
+    eye_y = 180.0  # (180 - 100) / 200 = 0.40 (flattering eye level)
+
+    score, status, msg = evaluate_camera_perspective(face_box, eye_y=eye_y)
+    assert score == 1.0
+    assert status == "eye_level"
+    assert msg is None
+
+
+def test_camera_perspective_chin_and_head_tilt():
+    """Verify chin angle pitch and head tilt angle detection."""
+    from ai_engine.perspective import evaluate_camera_perspective
+
+    face_box = [100.0, 100.0, 300.0, 300.0]
+    # Head tilted sideways (large dy relative to dx)
+    score, status, msg = evaluate_camera_perspective(
+        face_box=face_box,
+        eye_y=180.0,
+        re_x=140.0,
+        re_y=165.0,
+        le_x=220.0,
+        le_y=195.0,
+    )
+    assert status == "head_tilted"
+    assert "Straighten your head" in msg
+
+    # Chin tucked down (eye_to_nose > 1.85 * nose_to_mouth)
+    score_chin, status_chin, msg_chin = evaluate_camera_perspective(
+        face_box=face_box,
+        eye_y=170.0,
+        nose_y=230.0, # eye_to_nose = 60
+        mouth_y=255.0, # nose_to_mouth = 25 -> ratio = 2.4
+    )
+    assert status_chin == "chin_down"
+    assert "Lift chin slightly" in msg_chin
+

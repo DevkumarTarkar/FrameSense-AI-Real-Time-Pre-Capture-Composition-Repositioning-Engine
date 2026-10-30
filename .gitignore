@@ -36,3 +36,8 @@ data/AVA.txt
 
 # Temporary lock files
 ~$*
+
+# Local SQLite databases and runtime uploads
+data/*.db
+data/uploads/*
+!data/uploads/.gitkeep

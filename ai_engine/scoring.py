@@ -24,6 +24,12 @@ class CompositionTelemetry:
     target_y: Optional[float] = None
     face_box: Optional[List[float]] = None
     sub_scores: dict = field(default_factory=dict)
+    shot_type: Optional[str] = "portrait"
+    shot_description: Optional[str] = None
+    shot_confidence: Optional[float] = None
+    estimated_distance_ft: Optional[float] = None
+    estimated_distance_m: Optional[float] = None
+    all_faces: Optional[List[List[float]]] = None
 
 
 def compute_composite_score(

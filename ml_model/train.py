@@ -42,12 +42,13 @@ def compute_correlations(y_true, y_pred):
 
 
 def train_aesthetic_model(
-    annotation_path="data/sample_annotations.txt",
+    annotation_path="data/curated_ava_benchmark.txt",
     images_dir="data/images",
-    epochs=5,
-    batch_size=16,
+    epochs=20,
+    batch_size=32,
     lr=1e-4,
     save_dir="ml_model/weights",
+    resume_checkpoint="ml_model/weights/best_aesthetic_mobilenet.pth",
 ):
     """Fine-tunes MobileNetV3NIMA on AVA dataset."""
     os.makedirs(save_dir, exist_ok=True)
@@ -84,16 +85,34 @@ def train_aesthetic_model(
     print(f"[Dataset] Total Samples: {len(full_dataset)} | Train: {train_size} | Validation: {val_size}")
 
     # 3. Model & Loss setup
-    model = MobileNetV3NIMA(pretrained=True).to(device)
+    model = MobileNetV3NIMA(pretrained=False).to(device)
+    
+    start_epoch = 1
+    best_val_loss = float("inf")
+
+    # Load existing checkpoint if available to continue training up to 20 epochs
+    if resume_checkpoint and os.path.exists(resume_checkpoint):
+        try:
+            ckpt = torch.load(resume_checkpoint, map_location=device, weights_only=False)
+            if isinstance(ckpt, dict) and "model_state_dict" in ckpt:
+                model.load_state_dict(ckpt["model_state_dict"])
+                start_epoch = ckpt.get("epoch", 0) + 1
+                best_val_loss = ckpt.get("val_loss", float("inf"))
+                print(f"[Checkpoint] Resuming training from Epoch {start_epoch} (Prior Val Loss: {best_val_loss:.4f})")
+            elif isinstance(ckpt, dict):
+                model.load_state_dict(ckpt)
+                print(f"[Checkpoint] Loaded raw model state dict from {resume_checkpoint}")
+        except Exception as e:
+            print(f"[Checkpoint] Failed to resume checkpoint ({e}). Starting fresh.")
+
     criterion = EMDLoss(r=2.0)
     optimizer = AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
     scheduler = CosineAnnealingLR(optimizer, T_max=epochs)
 
-    best_val_loss = float("inf")
-    history = {"train_loss": [], "val_loss": [], "srcc": [], "plcc": []}
+    history = {"epochs": [], "train_loss": [], "val_loss": [], "srcc": [], "plcc": []}
 
-    print("\n[Training Loop Started]")
-    for epoch in range(1, epochs + 1):
+    print(f"\n[Training Loop Started: Running from Epoch {start_epoch} to {epochs}]")
+    for epoch in range(start_epoch, epochs + 1):
         epoch_start = time.time()
         model.train()
         running_train_loss = 0.0
@@ -136,6 +155,8 @@ def train_aesthetic_model(
         plcc, srcc = compute_correlations(val_true_scores, val_pred_scores)
         epoch_duration = time.time() - epoch_start
 
+        # Save history metrics
+        history["epochs"].append(epoch)
         history["train_loss"].append(epoch_train_loss)
         history["val_loss"].append(epoch_val_loss)
         history["srcc"].append(srcc)
@@ -171,7 +192,7 @@ def train_aesthetic_model(
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
-        epochs_range = list(range(1, epochs + 1))
+        epochs_range = history["epochs"]
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 
         # Subplot 1: EMD Loss
@@ -206,6 +227,6 @@ if __name__ == "__main__":
     train_aesthetic_model(
         annotation_path="data/curated_ava_benchmark.txt",
         images_dir="data/images",
-        epochs=5,
+        epochs=20,
         batch_size=32,
     )

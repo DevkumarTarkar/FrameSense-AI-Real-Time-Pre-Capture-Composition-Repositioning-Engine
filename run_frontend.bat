@@ -9,10 +9,10 @@ echo.
 
 if not exist "node_modules\" (
     echo [INFO] Installing frontend dependencies...
-    npm install
+    call pnpm install --no-frozen-lockfile
 )
 
 echo Starting Next.js Dev Server...
-npm run dev
+call pnpm dev
 
 pause
