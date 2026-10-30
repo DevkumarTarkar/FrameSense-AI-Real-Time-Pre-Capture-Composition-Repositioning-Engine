@@ -25,6 +25,7 @@ import {
   Sun,
   Compass,
   Radio,
+  FlipHorizontal,
 } from 'lucide-react'
 
 interface Telemetry {
@@ -129,7 +130,7 @@ function getPresetCropBox(width: number, height: number, preset: PresetMode) {
 }
 
 // Smart Hinglish Natural Translation Dictionary for Photography Assistant
-function getHinglishPrompt(msg: string, isSolo = false): string {
+function getHinglishPrompt(msg: string, isSolo = false, isMirrored = false): string {
   if (!msg) return isSolo ? 'Frame me aao aur thoda ruko' : 'Phone ko seedha pakdo'
   const lower = msg.toLowerCase()
 
@@ -151,12 +152,24 @@ function getHinglishPrompt(msg: string, isSolo = false): string {
     return isSolo ? 'Thoda aage aao' : 'Camera thoda paas le aao'
   }
 
-  // 2. Lateral Framing & Rule of Thirds
+  // 2. Lateral Framing & Rule of Thirds (Respects Mirrored Selfie View vs Raw View)
   if (lower.includes('shift subject slightly right') || lower.includes('move camera right') || lower.includes('shift right')) {
+    if (isMirrored) {
+      return isSolo ? 'Apne left me ek step lo' : 'Camera thoda left me ghumao'
+    }
     return isSolo ? 'Apne right me ek step lo' : 'Camera thoda right me ghumao'
   }
   if (lower.includes('shift subject slightly left') || lower.includes('move camera left') || lower.includes('shift left')) {
+    if (isMirrored) {
+      return isSolo ? 'Apne right me ek step lo' : 'Camera thoda right me ghumao'
+    }
     return isSolo ? 'Apne left me ek step lo' : 'Camera thoda left me ghumao'
+  }
+  if (lower.includes('shift subject slightly down') || lower.includes('shift down')) {
+    return isSolo ? 'Thoda neeche baitho ya jhuko' : 'Camera thoda neeche jhukao'
+  }
+  if (lower.includes('shift subject slightly up') || lower.includes('shift up')) {
+    return isSolo ? 'Thoda seedhe khade ho jao' : 'Camera thoda upar uthao'
   }
 
   // 3. Headroom & Vertical Tilt
@@ -167,12 +180,44 @@ function getHinglishPrompt(msg: string, isSolo = false): string {
     return 'Camera thoda upar uthao'
   }
 
-  // 4. Horizon & Level
+  // 4. Horizon & Camera Level
   if (lower.includes('level camera') || lower.includes('slanted') || lower.includes('tilt phone')) {
-    return 'Phone ko thoda seedha rakho'
+    if (lower.includes('tilt left')) {
+      return isMirrored ? 'Camera ko right ki taraf thoda seedha karo' : 'Camera ko left ki taraf thoda seedha karo'
+    }
+    if (lower.includes('tilt right')) {
+      return isMirrored ? 'Camera ko left ki taraf thoda seedha karo' : 'Camera ko right ki taraf thoda seedha karo'
+    }
+    return 'Phone ko thoda seedha pakdo'
   }
 
-  // 5. Lighting, Glare & Shadows
+  // 5. Eye-Level Perspective & Flattering Portrait Angles
+  if (lower.includes('eye level') || lower.includes('raise camera')) {
+    return isSolo ? 'Tripod ko aakhon ke samne upar uthao' : 'Camera thoda upar aakhon ke samne lao'
+  }
+  if (lower.includes('lower camera')) {
+    return isSolo ? 'Tripod ko thoda neeche karo' : 'Camera thoda neeche aakhon ke samne lao'
+  }
+  if (lower.includes('lift chin') || lower.includes('sharp jawline')) {
+    return 'Chin thodi upar uthao for sharp jawline'
+  }
+  if (lower.includes('lower chin')) {
+    return 'Chin thodi neeche karo aur lens me dekho'
+  }
+  if (lower.includes('45°') || lower.includes('45-degree') || lower.includes('angle face')) {
+    return 'Face thoda 45-degree turn karo for cinematic look'
+  }
+  if (lower.includes('straighten your head') || lower.includes('head_tilted')) {
+    return 'Head thoda seedha rakho'
+  }
+  if (lower.includes('turn face slightly back')) {
+    return 'Face thoda camera ki taraf ghumao'
+  }
+  if (lower.includes('relax shoulders') || lower.includes('shoulders')) {
+    return 'Shoulders relax karo aur camera lens me dekho'
+  }
+
+  // 6. Lighting, Glare & Shadows
   if (lower.includes('glare') || lower.includes('overexposed') || lower.includes('harsh glare')) {
     return 'Face par tez dhoop ya glare hai, angle badlo ya shade me aao'
   }
@@ -204,14 +249,14 @@ function getHinglishPrompt(msg: string, isSolo = false): string {
   return msg
 }
 
-function getSoloCreatorPrompt(msg: string): string {
+function getSoloCreatorPrompt(msg: string, isMirrored = false): string {
   if (!msg) return 'Hold camera steady'
   const lower = msg.toLowerCase()
   if (lower.includes('shift subject slightly right') || lower.includes('shift right')) {
-    return 'Step to your right'
+    return isMirrored ? 'Step to your left' : 'Step to your right'
   }
   if (lower.includes('shift subject slightly left') || lower.includes('shift left')) {
-    return 'Step to your left'
+    return isMirrored ? 'Step to your right' : 'Step to your left'
   }
   if (lower.includes('step back')) {
     return 'Take two steps back'
@@ -231,8 +276,29 @@ function getSoloCreatorPrompt(msg: string): string {
   if (lower.includes('glare')) {
     return 'Step away from direct light'
   }
-  if (lower.includes('eye level') || lower.includes('chin angle')) {
+  if (lower.includes('eye level') || lower.includes('raise camera')) {
     return 'Raise the tripod to eye level'
+  }
+  if (lower.includes('lower camera')) {
+    return 'Lower the tripod slightly to eye level'
+  }
+  if (lower.includes('lift chin') || lower.includes('sharp jawline')) {
+    return 'Lift your chin slightly for a sharp jawline'
+  }
+  if (lower.includes('lower chin')) {
+    return 'Lower your chin slightly and look at the lens'
+  }
+  if (lower.includes('45°') || lower.includes('45-degree') || lower.includes('angle face')) {
+    return 'Turn your face slightly at a 45-degree angle'
+  }
+  if (lower.includes('straighten your head') || lower.includes('head_tilted')) {
+    return 'Straighten your head slightly'
+  }
+  if (lower.includes('turn face slightly back')) {
+    return 'Turn your face back toward the camera'
+  }
+  if (lower.includes('relax shoulders') || lower.includes('shoulders')) {
+    return 'Relax your shoulders and look at the lens'
   }
   if (lower.includes('level camera')) {
     return 'Keep the phone straight'
@@ -268,6 +334,9 @@ export default function Page() {
   // Feature 3: Solo Creator / Tripod Blind Mode
   const [soloMode, setSoloMode] = useState(false)
 
+  // Mirror Selfie View (Defaults to true for natural selfie/webcam reflection)
+  const [isMirrored, setIsMirrored] = useState(true)
+
   // Voice Language Toggle: 'hinglish' (Default) | 'en'
   const [voiceLang, setVoiceLang] = useState<'hinglish' | 'en'>('hinglish')
 
@@ -295,6 +364,8 @@ export default function Page() {
   const streamRef = useRef<MediaStream | null>(null)
   const animFrameIdRef = useRef<number | null>(null)
   const lastSpokenRef = useRef<string>('')
+  const msgCycleRef = useRef<number>(0)
+  const lastSpeakTimeRef = useRef<number>(0)
 
   // Auto-capture & countdown timer refs
   const stableStartTimeRef = useRef<number | null>(null)
@@ -357,9 +428,9 @@ export default function Page() {
 
       let spokenText = text
       if (voiceLang === 'hinglish') {
-        spokenText = getHinglishPrompt(text, soloMode)
+        spokenText = getHinglishPrompt(text, soloMode, isMirrored)
       } else if (soloMode) {
-        spokenText = getSoloCreatorPrompt(text)
+        spokenText = getSoloCreatorPrompt(text, isMirrored)
       }
 
       if (!force && spokenText === lastSpokenRef.current) return
@@ -380,18 +451,18 @@ export default function Page() {
         if (indianVoice) {
           utterance.voice = indianVoice
         }
-        utterance.rate = 1.05
+        utterance.rate = 1.15
         utterance.pitch = 1.02
       } else {
-        utterance.rate = soloMode ? 1.0 : 1.05
-        utterance.pitch = soloMode ? 1.06 : 1.0
+        utterance.rate = 1.15
+        utterance.pitch = soloMode ? 1.05 : 1.0
       }
 
       utterance.volume = soloMode ? 1.0 : 0.9
       window.speechSynthesis.speak(utterance)
       lastSpokenRef.current = spokenText
     },
-    [voice, soloMode, voiceLang]
+    [voice, soloMode, voiceLang, isMirrored]
   )
 
   // Camera Initialization
@@ -472,7 +543,36 @@ export default function Page() {
                 sub_scores: data.sub_scores || prev.sub_scores,
               }))
               if (Array.isArray(data.messages) && data.messages.length > 0) {
-                speakFeedback(data.messages[0])
+                const now = Date.now()
+                // Prioritize photo angle, framing, headroom and lighting cues over pure metric distance
+                const prioritizedMessages = [...data.messages].sort((a, b) => {
+                  const isDistA = a.toLowerCase().includes('step') || a.toLowerCase().includes('feet') || a.toLowerCase().includes('too close') || a.toLowerCase().includes('too far')
+                  const isDistB = b.toLowerCase().includes('step') || b.toLowerCase().includes('feet') || b.toLowerCase().includes('too close') || b.toLowerCase().includes('too far')
+                  if (isDistA && !isDistB) return 1
+                  if (!isDistA && isDistB) return -1
+                  return 0
+                })
+
+                const topMsg = prioritizedMessages[0]
+                const isNewUrgent =
+                  topMsg &&
+                  topMsg !== lastSpokenRef.current &&
+                  !topMsg.includes('Hold steady') &&
+                  !topMsg.includes('balanced')
+
+                // 1. Instant response if subject moves or new condition arises (~1.1s minimum audio gap)
+                if (isNewUrgent && now - lastSpeakTimeRef.current > 1100) {
+                  msgCycleRef.current = 0
+                  lastSpeakTimeRef.current = now
+                  speakFeedback(topMsg, true)
+                }
+                // 2. Real-time coaching cycle: rotate every 1.65s (within 1-2 sec)
+                else if (now - lastSpeakTimeRef.current > 1650) {
+                  msgCycleRef.current = (msgCycleRef.current + 1) % prioritizedMessages.length
+                  lastSpeakTimeRef.current = now
+                  const chosenMsg = prioritizedMessages[msgCycleRef.current] || topMsg
+                  speakFeedback(chosenMsg, true)
+                }
               }
             }
           } catch (err) {
@@ -555,6 +655,11 @@ export default function Page() {
         snapCanvas.height = Math.round(crop.height)
         const ctx = snapCanvas.getContext('2d')
         if (ctx) {
+          if (isMirrored) {
+            ctx.save()
+            ctx.translate(snapCanvas.width, 0)
+            ctx.scale(-1, 1)
+          }
           ctx.drawImage(
             v,
             crop.x,
@@ -566,6 +671,9 @@ export default function Page() {
             snapCanvas.width,
             snapCanvas.height
           )
+          if (isMirrored) {
+            ctx.restore()
+          }
           const dataUrl = snapCanvas.toDataURL('image/jpeg', 0.95)
           const a = document.createElement('a')
           a.href = dataUrl
@@ -609,7 +717,7 @@ export default function Page() {
         }
       }
     },
-    [preset, telemetry.score, playShutterSound]
+    [preset, telemetry.score, playShutterSound, triggerHaptic, isMirrored]
   )
 
   // Auto-Capture Monitoring Loop (Triggers when Score >= 85 for 1.0 continuous second)
@@ -849,7 +957,7 @@ export default function Page() {
       const sx = w / 640
       const sy = h / 480
 
-      const boxX = x1 * sx
+      const boxX = (isMirrored ? 640 - x2 : x1) * sx
       const boxY = y1 * sy
       const boxW = Math.max(0, (x2 - x1) * sx)
       const boxH = Math.max(0, (y2 - y1) * sy)
@@ -877,7 +985,7 @@ export default function Page() {
         ) {
           return
         }
-        const gX = gx1 * sx
+        const gX = (isMirrored ? 640 - gx2 : gx1) * sx
         const gY = gy1 * sy
         const gW = Math.max(0, (gx2 - gx1) * sx)
         const gH = Math.max(0, (gy2 - gy1) * sy)
@@ -904,7 +1012,7 @@ export default function Page() {
       const sx = w / 640
       const sy = h / 480
 
-      let tx = telemetry.target_x * sx
+      let tx = (isMirrored ? 640 - telemetry.target_x : telemetry.target_x) * sx
       let ty = telemetry.target_y * sy
 
       // If Center Symmetry mode, override target to dead center of active preset
@@ -944,7 +1052,8 @@ export default function Page() {
       // AR Dynamic Direction Vector Arrow
       if (telemetry.face_box && !isLocked) {
         const [fx1, fy1, fx2, fy2] = telemetry.face_box
-        const subjectCx = (fx1 + (fx2 - fx1) / 2) * sx
+        const rawCx = fx1 + (fx2 - fx1) / 2
+        const subjectCx = (isMirrored ? 640 - rawCx : rawCx) * sx
         const subjectCy = (fy1 + (fy2 - fy1) / 2) * sy
 
         const dx = tx - subjectCx
@@ -1001,7 +1110,7 @@ export default function Page() {
     }
 
     animFrameIdRef.current = requestAnimationFrame(renderHUD)
-  }, [grid, telemetry, preset, autoCaptureProgress, soloMode])
+  }, [grid, telemetry, preset, autoCaptureProgress, soloMode, isMirrored])
 
   useEffect(() => {
     animFrameIdRef.current = requestAnimationFrame(renderHUD)
@@ -1119,7 +1228,9 @@ export default function Page() {
                   autoPlay
                   playsInline
                   muted
-                  className="absolute inset-0 h-full w-full object-cover"
+                  className={`absolute inset-0 h-full w-full object-cover transition-transform duration-200 ${
+                    isMirrored ? '-scale-x-100' : ''
+                  }`}
                 />
 
                 <canvas
@@ -1330,6 +1441,19 @@ export default function Page() {
                     }`}
                   >
                     <Grid3X3 size={14} /> Grid
+                  </button>
+
+                  {/* Mirror Selfie Flip Toggle Button */}
+                  <button
+                    onClick={() => setIsMirrored(!isMirrored)}
+                    className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold transition ${
+                      isMirrored
+                        ? 'border-[#38bdf8]/40 bg-[#38bdf8]/15 text-[#38bdf8]'
+                        : 'border-white/10 text-[#697579] hover:text-white'
+                    }`}
+                    title="Toggle Natural Mirror View (Flips video horizontally like a mirror)"
+                  >
+                    <FlipHorizontal size={14} /> Mirror: {isMirrored ? 'ON' : 'OFF'}
                   </button>
 
                   <button

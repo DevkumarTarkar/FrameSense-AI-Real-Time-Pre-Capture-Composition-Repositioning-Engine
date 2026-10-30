@@ -16,9 +16,9 @@ METERS_TO_FEET = 3.28084
 # Calibrated effective focal length for standard 640x480 webcam & front-facing smartphone camera
 DEFAULT_FOCAL_LENGTH_PX = 750.0
 
-# Ideal portrait distance boundaries in feet
-IDEAL_PORTRAIT_DISTANCE_MIN_FT = 2.8  # ~0.85 meters
-IDEAL_PORTRAIT_DISTANCE_MAX_FT = 5.5  # ~1.7 meters
+# Ideal portrait distance boundaries in feet (calibrated for desktop webcam & handheld mobile selfie)
+IDEAL_PORTRAIT_DISTANCE_MIN_FT = 1.4  # ~0.42 meters (prevents false "step back" alarms when seated at desk or holding selfie)
+IDEAL_PORTRAIT_DISTANCE_MAX_FT = 6.2  # ~1.89 meters
 
 
 def estimate_metric_face_distance(

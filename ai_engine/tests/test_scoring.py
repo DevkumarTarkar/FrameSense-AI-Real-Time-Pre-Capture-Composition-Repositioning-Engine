@@ -223,3 +223,31 @@ def test_camera_perspective_eye_level():
     assert status == "eye_level"
     assert msg is None
 
+
+def test_camera_perspective_chin_and_head_tilt():
+    """Verify chin angle pitch and head tilt angle detection."""
+    from ai_engine.perspective import evaluate_camera_perspective
+
+    face_box = [100.0, 100.0, 300.0, 300.0]
+    # Head tilted sideways (large dy relative to dx)
+    score, status, msg = evaluate_camera_perspective(
+        face_box=face_box,
+        eye_y=180.0,
+        re_x=140.0,
+        re_y=165.0,
+        le_x=220.0,
+        le_y=195.0,
+    )
+    assert status == "head_tilted"
+    assert "Straighten your head" in msg
+
+    # Chin tucked down (eye_to_nose > 1.85 * nose_to_mouth)
+    score_chin, status_chin, msg_chin = evaluate_camera_perspective(
+        face_box=face_box,
+        eye_y=170.0,
+        nose_y=230.0, # eye_to_nose = 60
+        mouth_y=255.0, # nose_to_mouth = 25 -> ratio = 2.4
+    )
+    assert status_chin == "chin_down"
+    assert "Lift chin slightly" in msg_chin
+

@@ -297,16 +297,29 @@ class VisionEngine:
             face_box=face_box,
         )
 
-        # 9. Eye-Level Perspective & Flattering Angle Analysis
+        # 9. Eye-Level Perspective, Chin Angle & 45-Degree Pose Analysis
         eye_y, nose_y, mouth_y = None, None, None
+        re_x, re_y, le_x, le_y, nose_x = None, None, None, None, None
+        angle_coaching_msg = None
         try:
             kps = primary_detection.location_data.relative_keypoints
             if kps and len(kps) >= 4:
+                re_x = kps[0].x * w
                 re_y = kps[0].y * h
+                le_x = kps[1].x * w
                 le_y = kps[1].y * h
-                eye_y = (re_y + le_y) / 2.0
+                nose_x = kps[2].x * w
                 nose_y = kps[2].y * h
+                mouth_x = kps[3].x * w
                 mouth_y = kps[3].y * h
+                eye_y = (re_y + le_y) / 2.0
+
+                # If perfectly symmetric/flat front, recommend 45-degree angle for dramatic depth
+                d_r = abs(nose_x - re_x)
+                d_l = abs(nose_x - le_x)
+                eye_span = max(10.0, abs(re_x - le_x))
+                if abs(d_r - d_l) / eye_span < 0.08 and shot_res.shot_type == "portrait":
+                    angle_coaching_msg = "Turn face slightly at 45° angle for cinematic portrait depth"
         except Exception:
             pass
 
@@ -315,24 +328,32 @@ class VisionEngine:
             eye_y=eye_y,
             nose_y=nose_y,
             mouth_y=mouth_y,
+            re_x=re_x,
+            re_y=re_y,
+            le_x=le_x,
+            le_y=le_y,
+            nose_x=nose_x,
         )
 
-        # Prioritize guidance messages
+        # Prioritize guidance messages (Framing, Headroom, Tilt, Perspective and Lighting prioritized for natural coaching)
         candidates = []
         if shot_res.edge_clipped_subject:
             candidates.append((0.15, shot_res.edge_clipped_subject))
-        if final_dist_msg:
-            candidates.append((final_dist_score, final_dist_msg))
         if thirds_msg:
             candidates.append((thirds_score, thirds_msg))
         if headroom_msg:
             candidates.append((headroom_score, headroom_msg))
         if tilt_msg:
             candidates.append((tilt_score, tilt_msg))
-        if lighting_msg:
-            candidates.append((lighting_score, lighting_msg))
         if perspective_msg:
             candidates.append((perspective_score, perspective_msg))
+        if lighting_msg:
+            candidates.append((lighting_score, lighting_msg))
+        if angle_coaching_msg:
+            candidates.append((0.78, angle_coaching_msg))
+        if final_dist_msg:
+            # Deprioritize distance so framing, angles and posture take priority over metric depth
+            candidates.append((max(0.88, final_dist_score), final_dist_msg))
 
         telemetry = compute_composite_score(
             thirds_score=thirds_score,
