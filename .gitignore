@@ -41,3 +41,9 @@ data/AVA.txt
 data/*.db
 data/uploads/*
 !data/uploads/.gitkeep
+
+# Report documents and diagram generators
+*.docx
+generate_*.py
+Figure_*.png
+*_diagram.png
