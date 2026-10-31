@@ -58,6 +58,10 @@ class VisionEngine:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.norm_mean = torch.tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1).to(self.device)
         self.norm_std = torch.tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1).to(self.device)
+        self.aesthetic_source = "heuristic"
+        self.actual_device = "NVIDIA GeForce RTX 3050 CUDA" if (torch.cuda.is_available() and self.device.type == "cuda") else "Host CPU"
+        self._frame_count = 0
+        self._cached_aesthetic: Optional[Tuple[float, float]] = None
 
         self._init_detector()
         self._init_nima()
@@ -78,7 +82,8 @@ class VisionEngine:
             try:
                 logger.info(f"Loading official Google SOTA NIMA (InceptionV2-AVA) on compute device: {self.device}")
                 self.nima_metric = pyiqa.create_metric("nima", device=self.device)
-                logger.info("Official Google SOTA NIMA engine successfully activated on RTX 3050 CUDA GPU.")
+                self.aesthetic_source = "neural"
+                logger.info(f"Official Google SOTA NIMA engine successfully activated on {self.actual_device}.")
                 return
             except Exception as e:
                 logger.error(f"Failed to load PyIQA official NIMA metric: {e}")
@@ -95,20 +100,27 @@ class VisionEngine:
                 model.load_state_dict(state_dict)
                 model.eval()
                 self.nima_model = model
+                self.aesthetic_source = "neural"
                 logger.info("MobileNetV3-NIMA fallback loaded.")
                 return
             except Exception as e:
                 logger.warning(f"Failed to load MobileNetV3 checkpoint: {e}")
                 self.nima_model = None
 
-        logger.warning("No aesthetic neural model available; will use fallback scores.")
+        self.aesthetic_source = "heuristic"
+        logger.warning("No aesthetic neural model available; will use calibrated physical metrics.")
 
     def decode_image(self, base64_str: str) -> Optional[np.ndarray]:
-        """Decodes base64 string into BGR OpenCV image array."""
+        """Decodes base64 string into BGR OpenCV image array with input validation."""
+        if not base64_str or not isinstance(base64_str, str):
+            return None
         try:
-            if "," in base64_str:
-                base64_str = base64_str.split(",", 1)[1]
-            image_bytes = base64.b64decode(base64_str)
+            cleaned_str = base64_str.strip()
+            if "," in cleaned_str:
+                cleaned_str = cleaned_str.split(",", 1)[1]
+            image_bytes = base64.b64decode(cleaned_str)
+            if len(image_bytes) == 0:
+                return None
             np_arr = np.frombuffer(image_bytes, np.uint8)
             frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
             return frame
@@ -171,10 +183,6 @@ class VisionEngine:
             # Perceptual composite aesthetic multiplier
             visual_multiplier = (sharpness_factor * 0.40) + (contrast_factor * 0.35) + (sat_factor * 0.25)
             
-            # Dynamic Calibration:
-            # - Dark/covered camera or blurry (raw ~2.4) -> calibrated ~1.5 - 2.8
-            # - Average scene (raw ~4.5) -> calibrated ~6.0 - 7.0
-            # - High-quality sharp composition (raw ~5.5+) -> calibrated ~8.0 - 9.5
             norm_aesthetic = (raw_score - 2.2) / 3.8
             base_calibrated = 1.5 + (np.clip(norm_aesthetic, 0.0, 1.0) * 7.5)
             calibrated = float(np.clip(base_calibrated * (0.6 + visual_multiplier * 0.4), 1.2, 9.8))
@@ -187,14 +195,64 @@ class VisionEngine:
 
     def analyze_frame(self, frame_bgr: np.ndarray) -> CompositionTelemetry:
         """Runs end-to-end unified composition and aesthetic analysis on incoming frame."""
+        # 0. Frame Validation
+        if frame_bgr is None or not isinstance(frame_bgr, np.ndarray) or frame_bgr.size == 0 or len(frame_bgr.shape) < 2:
+            return CompositionTelemetry(
+                score=0,
+                messages=["Invalid or empty camera frame"],
+                target_x=None,
+                target_y=None,
+                face_box=None,
+                sub_scores={
+                    "thirds": 0.0,
+                    "headroom": 0.0,
+                    "tilt": 0.0,
+                    "distance": 0.0,
+                    "lighting": 0.0,
+                    "aesthetic_ai": 1.0,
+                },
+                shot_type="unframed",
+                shot_description="Invalid Frame",
+                shot_confidence=0.0,
+                estimated_distance_ft=None,
+                estimated_distance_m=None,
+                all_faces=[],
+            )
+
+        # Normalize channel layout to standard 3-channel BGR
+        if len(frame_bgr.shape) == 2:
+            frame_bgr = cv2.cvtColor(frame_bgr, cv2.COLOR_GRAY2BGR)
+        elif frame_bgr.shape[2] == 4:
+            frame_bgr = cv2.cvtColor(frame_bgr, cv2.COLOR_BGRA2BGR)
+
         h, w = frame_bgr.shape[:2]
+        if h <= 10 or w <= 10:
+            return CompositionTelemetry(
+                score=0,
+                messages=["Frame dimensions too small"],
+                target_x=None,
+                target_y=None,
+                face_box=None,
+                sub_scores={"thirds": 0.0, "headroom": 0.0, "tilt": 0.0, "distance": 0.0},
+                shot_type="unframed",
+                shot_description="Degenerate Dimensions",
+                shot_confidence=0.0,
+                estimated_distance_ft=None,
+                estimated_distance_m=None,
+                all_faces=[],
+            )
 
         # 1. Classical CV: Horizon Tilt Detection
         dominant_angle, _ = detect_horizon_angle(frame_bgr)
         tilt_score, reported_angle, tilt_msg = score_horizon_tilt(dominant_angle)
 
-        # 2. Deep Learning: Neural Aesthetic Quality on RTX 3050
-        aesthetic_score, raw_aesthetic = self.compute_aesthetic_score(frame_bgr)
+        # 2. Deep Learning: Neural Aesthetic Quality with Cadence Caching
+        self._frame_count += 1
+        if self._cached_aesthetic is not None and (self._frame_count % 4 != 0):
+            aesthetic_score, raw_aesthetic = self._cached_aesthetic
+        else:
+            aesthetic_score, raw_aesthetic = self.compute_aesthetic_score(frame_bgr)
+            self._cached_aesthetic = (aesthetic_score, raw_aesthetic)
 
         # 3. MediaPipe Face Detection
         rgb_frame = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
@@ -215,7 +273,38 @@ class VisionEngine:
                     round(by + bh, 1),
                 ])
 
-        # 4. Contextual Shot Type Auto-Classification
+        # 4. Photometric Darkness & Covered-Camera Rejection
+        gray_frame = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY)
+        mean_lum = float(np.mean(gray_frame))
+        var_lum = float(np.var(gray_frame))
+
+        # If camera is genuinely covered or pitch black with no face detected:
+        if not all_face_boxes and (mean_lum < 18.0 or (mean_lum < 35.0 and var_lum < 25.0)):
+            return CompositionTelemetry(
+                score=0,
+                messages=["Camera appears covered or scene is too dark"],
+                target_x=None,
+                target_y=None,
+                face_box=None,
+                sub_scores={
+                    "thirds": 0.0,
+                    "headroom": 0.0,
+                    "tilt": 0.0,
+                    "distance": 0.0,
+                    "lighting": 0.0,
+                    "aesthetic_ai": 1.0,
+                    "aesthetic_source": self.aesthetic_source,
+                    "device": self.actual_device,
+                },
+                shot_type="dark_scene",
+                shot_description="Unusable / Dark Scene",
+                shot_confidence=1.0,
+                estimated_distance_ft=None,
+                estimated_distance_m=None,
+                all_faces=[],
+            )
+
+        # 5. Contextual Shot Type Auto-Classification
         shot_res = classify_shot_type(
             frame_bgr=frame_bgr,
             all_face_boxes=all_face_boxes,
@@ -223,17 +312,22 @@ class VisionEngine:
         )
 
         if not all_face_boxes:
-            # Context-adaptive scoring for non-human scenes (Landscape, Architecture, Food)
-            if shot_res.shot_type == "landscape":
-                score = int(round((tilt_score * 0.55 + (aesthetic_score / 10.0) * 0.45) * 100))
+            # Context-adaptive scoring for verified non-human scenes (Landscape, Architecture, Food)
+            if shot_res.shot_type == "landscape" and shot_res.confidence >= 0.75:
+                if dominant_angle is not None:
+                    score = int(round((tilt_score * 0.55 + (aesthetic_score / 10.0) * 0.45) * 100))
+                else:
+                    # Landscape without visible horizon (mountains, forest, sky)
+                    score = int(round((0.50 + (aesthetic_score / 10.0) * 0.50) * 80))
                 msg = tilt_msg or shot_res.adaptive_guidance
-            elif shot_res.shot_type == "architecture":
+            elif shot_res.shot_type == "architecture" and shot_res.confidence >= 0.75:
                 score = int(round((tilt_score * 0.50 + (aesthetic_score / 10.0) * 0.50) * 100))
                 msg = tilt_msg or shot_res.adaptive_guidance
-            elif shot_res.shot_type == "food":
+            elif shot_res.shot_type == "food" and shot_res.confidence >= 0.75:
                 score = int(round(((aesthetic_score / 10.0) * 0.85 + 0.15) * 100))
                 msg = shot_res.adaptive_guidance
             else:
+                # Unframed scene or ordinary room without subject: strictly 0
                 score = 0
                 msg = "Position subject inside the frame"
 
@@ -250,6 +344,8 @@ class VisionEngine:
                     "distance": 0.0,
                     "aesthetic_ai": aesthetic_score,
                     "aesthetic_raw": raw_aesthetic,
+                    "aesthetic_source": self.aesthetic_source,
+                    "device": self.actual_device,
                 },
                 shot_type=shot_res.shot_type,
                 shot_description=shot_res.description,
@@ -260,15 +356,26 @@ class VisionEngine:
             )
             return telemetry
 
-        # Pick primary subject face (highest confidence)
+        # 6. Prominence-Based Primary Subject Selection
+        def _get_detection_prominence(det):
+            b = det.location_data.relative_bounding_box
+            area = max(0.0, b.width) * max(0.0, b.height)
+            cx = b.xmin + (b.width / 2.0)
+            cy = b.ymin + (b.height / 2.0)
+            dist_center = ((cx - 0.5) ** 2 + (cy - 0.5) ** 2) ** 0.5
+            center_weight = max(0.3, 1.0 - (dist_center * 0.8))
+            conf = det.score[0] if (det.score and len(det.score) > 0) else 0.5
+            return area * center_weight * (conf ** 0.5)
+
         primary_detection = max(
             face_results.detections,
-            key=lambda d: d.score[0] if d.score else 0.0,
+            key=_get_detection_prominence,
         )
 
         bbox = primary_detection.location_data.relative_bounding_box
+        raw_ymin = bbox.ymin * h
         xmin = max(0.0, bbox.xmin * w)
-        ymin = max(0.0, bbox.ymin * h)
+        ymin = max(0.0, raw_ymin)
         box_w = min(w - xmin, bbox.width * w)
         box_h = min(h - ymin, bbox.height * h)
 
@@ -277,7 +384,11 @@ class VisionEngine:
         head_top_y = ymin
         face_box = [round(xmin, 1), round(ymin, 1), round(xmin + box_w, 1), round(ymin + box_h, 1)]
 
-        # 5. Extract Landmarks for Eye-Level Perspective, Gaze & Lead-Room Analysis
+        # Explicit border clipping check for skull extending beyond top frame
+        if raw_ymin <= 0.02 * h:
+            shot_res.edge_clipped_subject = "Head cut off at top of frame — tilt camera up"
+
+        # 7. Extract Landmarks for Eye-Level Perspective, Gaze & Lead-Room Analysis
         eye_y, nose_y, mouth_y = None, None, None
         re_x, re_y, le_x, le_y, nose_x = None, None, None, None, None
         subject_yaw = None
@@ -306,7 +417,7 @@ class VisionEngine:
         except Exception:
             pass
 
-        # 6. Rule of Thirds & Lead-Room Composition Alignment
+        # 8. Composition Evaluators Execution
         thirds_score, target_pt, dist, thirds_msg = evaluate_rule_of_thirds(
             center_x=center_x,
             center_y=center_y,
@@ -315,7 +426,6 @@ class VisionEngine:
             subject_yaw=subject_yaw,
         )
 
-        # 7. Anatomical & Shot-Adaptive Headroom Clearance
         headroom_score, headroom_ratio, headroom_msg = evaluate_headroom(
             head_top_y=head_top_y,
             frame_height=float(h),
@@ -323,7 +433,6 @@ class VisionEngine:
             apply_cranial_compensation=True,
         )
 
-        # 8. Monocular Metric Depth & Subject Distance
         dist_m, dist_ft, depth_score, depth_msg = estimate_metric_face_distance(
             face_box=face_box,
             frame_width=float(w),
@@ -334,11 +443,9 @@ class VisionEngine:
             frame_width=float(w),
             face_count=len(all_face_boxes),
         )
-        # Use precise metric depth prompt if triggered
         final_dist_msg = depth_msg if depth_msg else generic_dist_msg
         final_dist_score = min(depth_score, dist_score)
 
-        # 9. Face Lighting & Harsh Backlight Quality
         lighting_score, face_lum, lighting_status, lighting_msg = evaluate_face_lighting(
             frame_bgr=frame_bgr,
             face_box=face_box,
@@ -356,7 +463,7 @@ class VisionEngine:
             nose_x=nose_x,
         )
 
-        # Prioritize guidance messages (Framing, Headroom, Tilt, Perspective and Lighting prioritized for natural coaching)
+        # 9. Prioritize Coaching Recommendations
         candidates = []
         if shot_res.edge_clipped_subject:
             candidates.append((0.15, shot_res.edge_clipped_subject))
@@ -366,16 +473,16 @@ class VisionEngine:
             candidates.append((headroom_score, headroom_msg))
         if tilt_msg:
             candidates.append((tilt_score, tilt_msg))
-        if perspective_msg:
-            candidates.append((perspective_score, perspective_msg))
         if lighting_msg:
             candidates.append((lighting_score, lighting_msg))
+        if perspective_msg:
+            candidates.append((perspective_score, perspective_msg))
         if angle_coaching_msg:
             candidates.append((0.78, angle_coaching_msg))
         if final_dist_msg:
-            # Deprioritize distance so framing, angles and posture take priority over metric depth
             candidates.append((max(0.88, final_dist_score), final_dist_msg))
 
+        # 10. Composite Score Calculation with Critical Failure Gating
         telemetry = compute_composite_score(
             thirds_score=thirds_score,
             headroom_score=headroom_score,
@@ -387,9 +494,11 @@ class VisionEngine:
             has_subject=True,
         )
 
-        # Attach Deep Learning, Depth & Scene Context
+        # Attach Deep Learning, Depth & Telemetry Metadata
         telemetry.sub_scores["aesthetic_ai"] = aesthetic_score
         telemetry.sub_scores["aesthetic_raw"] = raw_aesthetic
+        telemetry.sub_scores["aesthetic_source"] = self.aesthetic_source
+        telemetry.sub_scores["device"] = self.actual_device
         telemetry.sub_scores["lighting"] = lighting_score
         telemetry.sub_scores["face_lum"] = face_lum
         telemetry.sub_scores["perspective"] = perspective_score

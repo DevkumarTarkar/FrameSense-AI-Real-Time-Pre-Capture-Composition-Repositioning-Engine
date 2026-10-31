@@ -217,8 +217,8 @@ def classify_shot_type(
         )
 
     return ShotTypeResult(
-        shot_type="landscape",
-        confidence=0.60,
-        description="Open Composition Scene",
-        adaptive_guidance="Position key visual interest on golden grid intersections",
+        shot_type="unframed",
+        confidence=0.50,
+        description="No Subject Detected",
+        adaptive_guidance="Position subject inside the frame",
     )
