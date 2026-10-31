@@ -145,7 +145,7 @@ function getHinglishPrompt(msg: string, isSolo = false, isMirrored = false): str
       const ft = Math.round(parseFloat(match[1]))
       return ft <= 1 ? 'Thoda sa peeche ho jao' : `Lagbhag ${ft} kadam peeche ho jao`
     }
-    return isSolo ? 'Thoda do kadam peeche jao' : 'Camera thoda peeche le jao'
+    return isSolo ? 'Do kadam peeche jao' : 'Do kadam peeche ho jao'
   }
   if (lower.includes('step closer') || lower.includes('move closer') || lower.includes('too far')) {
     const match = lower.match(/([0-9.]+)\s*feet/)
@@ -153,86 +153,89 @@ function getHinglishPrompt(msg: string, isSolo = false, isMirrored = false): str
       const ft = Math.round(parseFloat(match[1]))
       return ft <= 1 ? 'Thoda paas aao' : `Thoda ${ft} kadam aage aao`
     }
-    return isSolo ? 'Thoda aage aao' : 'Camera thoda paas le aao'
+    return isSolo ? 'Thoda aage aao' : 'Thoda paas aao'
   }
 
   // 2. Lateral Framing & Rule of Thirds (Respects Mirrored Selfie View vs Raw View)
   if (lower.includes('shift subject slightly right') || lower.includes('move camera right') || lower.includes('shift right')) {
     if (isMirrored) {
-      return isSolo ? 'Apne left me ek step lo' : 'Camera thoda left me ghumao'
+      return isSolo ? 'Apne left me ek step lo' : 'Camera left side ghumao'
     }
-    return isSolo ? 'Apne right me ek step lo' : 'Camera thoda right me ghumao'
+    return isSolo ? 'Apne right me ek step lo' : 'Camera right side ghumao'
   }
   if (lower.includes('shift subject slightly left') || lower.includes('move camera left') || lower.includes('shift left')) {
     if (isMirrored) {
-      return isSolo ? 'Apne right me ek step lo' : 'Camera thoda right me ghumao'
+      return isSolo ? 'Apne right me ek step lo' : 'Camera right side ghumao'
     }
-    return isSolo ? 'Apne left me ek step lo' : 'Camera thoda left me ghumao'
+    return isSolo ? 'Apne left me ek step lo' : 'Camera left side ghumao'
   }
   if (lower.includes('shift subject slightly down') || lower.includes('shift down')) {
-    return isSolo ? 'Thoda neeche baitho ya jhuko' : 'Camera thoda neeche jhukao'
+    return isSolo ? 'Thoda neeche baitho ya jhuko' : 'Phone neeche jhukao'
   }
   if (lower.includes('shift subject slightly up') || lower.includes('shift up')) {
-    return isSolo ? 'Thoda seedhe khade ho jao' : 'Camera thoda upar uthao'
+    return isSolo ? 'Thoda seedhe khade ho jao' : 'Phone thoda upar uthao'
   }
 
   // 3. Headroom & Vertical Tilt
   if (lower.includes('tilt camera down') || lower.includes('headroom too tight')) {
-    return 'Camera thoda neeche jhukao'
+    return 'Thoda neeche karo, sir cut raha hai'
   }
   if (lower.includes('tilt camera up') || lower.includes('excessive headroom')) {
-    return 'Camera thoda upar uthao'
+    return 'Phone thoda upar uthao'
   }
 
   // 4. Horizon & Camera Level
   if (lower.includes('level camera') || lower.includes('slanted') || lower.includes('tilt phone')) {
     if (lower.includes('tilt left')) {
-      return isMirrored ? 'Camera ko right ki taraf thoda seedha karo' : 'Camera ko left ki taraf thoda seedha karo'
+      return isMirrored ? 'Phone right ki taraf seedha karo' : 'Phone left ki taraf seedha karo'
     }
     if (lower.includes('tilt right')) {
-      return isMirrored ? 'Camera ko left ki taraf thoda seedha karo' : 'Camera ko right ki taraf thoda seedha karo'
+      return isMirrored ? 'Phone left ki taraf seedha karo' : 'Phone right ki taraf seedha karo'
     }
-    return 'Phone ko thoda seedha pakdo'
+    return 'Phone ko seedha pakdo'
   }
 
   // 5. Eye-Level Perspective & Flattering Portrait Angles
   if (lower.includes('eye level') || lower.includes('raise camera')) {
-    return isSolo ? 'Tripod ko aakhon ke samne upar uthao' : 'Camera thoda upar aakhon ke samne lao'
+    return isSolo ? 'Tripod ko aankhon ke samne lao' : 'Camera aankhon ke level par lao'
   }
   if (lower.includes('lower camera')) {
-    return isSolo ? 'Tripod ko thoda neeche karo' : 'Camera thoda neeche aakhon ke samne lao'
+    return isSolo ? 'Tripod thoda neeche karo' : 'Camera thoda neeche karo'
   }
   if (lower.includes('lift chin') || lower.includes('sharp jawline')) {
-    return 'Chin thodi upar uthao for sharp jawline'
+    return 'Chin thodi upar uthao'
   }
   if (lower.includes('lower chin')) {
     return 'Chin thodi neeche karo aur lens me dekho'
   }
   if (lower.includes('45°') || lower.includes('45-degree') || lower.includes('angle face')) {
-    return 'Face thoda 45-degree turn karo for cinematic look'
+    return 'Face halka sa turn karo'
   }
   if (lower.includes('straighten your head') || lower.includes('head_tilted')) {
-    return 'Head thoda seedha rakho'
+    return 'Gardun seedhi rakho'
   }
   if (lower.includes('turn face slightly back')) {
-    return 'Face thoda camera ki taraf ghumao'
+    return 'Face camera ki taraf ghumao'
   }
   if (lower.includes('relax shoulders') || lower.includes('shoulders')) {
-    return 'Shoulders relax karo aur camera lens me dekho'
+    return 'Shoulders relax karo'
   }
 
   // 6. Lighting, Glare & Shadows
   if (lower.includes('glare') || lower.includes('overexposed') || lower.includes('harsh glare')) {
-    return 'Face par tez dhoop ya glare hai, angle badlo ya shade me aao'
+    return 'Face par tez dhoop hai, thoda shade me aao'
   }
   if (lower.includes('backlight') || lower.includes('low light') || lower.includes('lighting is low') || lower.includes('shadow')) {
-    return 'Lighting kam hai, light ki taraf ghoomo'
+    return 'Lighting kam hai, roshni ki taraf ghoomo'
   }
   if (lower.includes('dark') || lower.includes('underexposed')) {
     return 'Roshni kam hai, thoda roshni me aao'
   }
 
-  // 6. Framing Subject & Completion
+  // 7. General Composition / Rule of Thirds
+  if (lower.includes('thirds') || lower.includes('center') || lower.includes('grid')) {
+    return 'Subject ko grid line par align karo'
+  }
   if (lower.includes('position subject') || lower.includes('no face')) {
     return 'Frame ke andar aao'
   }
@@ -372,6 +375,7 @@ export default function Page() {
   const lastSpeakTimeRef = useRef<number>(0)
   const isSpeakingRef = useRef<boolean>(false)
   const lastSpeakEndTimeRef = useRef<number>(0)
+  const activeUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null)
 
   // Auto-capture & countdown timer refs
   const stableStartTimeRef = useRef<number | null>(null)
@@ -505,6 +509,14 @@ export default function Page() {
     (text: string, force = false) => {
       if ((!voice && !soloMode) || typeof window === 'undefined' || !('speechSynthesis' in window) || !text) return
 
+      const now = Date.now()
+
+      // Mandatory 5.5 to 6 second cooldown between ANY routine spoken line
+      if (!force) {
+        if (now - lastSpeakTimeRef.current < 5500) return
+        if (isSpeakingRef.current || window.speechSynthesis.speaking) return
+      }
+
       let spokenText = text
       if (voiceLang === 'hinglish') {
         spokenText = getHinglishPrompt(text, soloMode, isMirrored)
@@ -512,30 +524,32 @@ export default function Page() {
         spokenText = getSoloCreatorPrompt(text, isMirrored)
       }
 
-      // If already speaking and this is not a forced priority event, let the full sentence finish!
-      if (!force && (isSpeakingRef.current || window.speechSynthesis.speaking)) {
+      // Avoid repeating identical sentences within 9 seconds unless forced
+      if (!force && spokenText === lastSpokenRef.current && now - lastSpeakTimeRef.current < 9000) {
         return
       }
 
-      if (!force && spokenText === lastSpokenRef.current) return
-
-      // Cancel only on forced priority events (e.g., auto-capture lock or shutter capture)
+      // Cancel only on high-priority forced events (auto-capture lock / shutter release)
       if (force) {
         window.speechSynthesis.cancel()
         isSpeakingRef.current = false
       }
 
       const utterance = new SpeechSynthesisUtterance(spokenText)
+      // Retain utterance in ref to protect from Chromium Garbage Collection audio drops
+      activeUtteranceRef.current = utterance
 
       utterance.onstart = () => {
         isSpeakingRef.current = true
       }
       utterance.onend = () => {
         isSpeakingRef.current = false
+        activeUtteranceRef.current = null
         lastSpeakEndTimeRef.current = Date.now()
       }
       utterance.onerror = () => {
         isSpeakingRef.current = false
+        activeUtteranceRef.current = null
         lastSpeakEndTimeRef.current = Date.now()
       }
 
@@ -552,17 +566,17 @@ export default function Page() {
         if (indianVoice) {
           utterance.voice = indianVoice
         }
-        utterance.rate = 1.0
-        utterance.pitch = 1.02
+        utterance.rate = 0.95 // Relaxed, clear pace
+        utterance.pitch = 1.0
       } else {
-        utterance.rate = 1.0
+        utterance.rate = 0.95
         utterance.pitch = soloMode ? 1.05 : 1.0
       }
 
       utterance.volume = soloMode ? 1.0 : 0.95
       window.speechSynthesis.speak(utterance)
       lastSpokenRef.current = spokenText
-      lastSpeakTimeRef.current = Date.now()
+      lastSpeakTimeRef.current = now
     },
     [voice, soloMode, voiceLang, isMirrored]
   )
@@ -662,26 +676,15 @@ export default function Page() {
                   !topMsg.includes('Hold steady') &&
                   !topMsg.includes('balanced')
 
-                const isBusySpeaking = isSpeakingRef.current || (typeof window !== 'undefined' && 'speechSynthesis' in window && window.speechSynthesis.speaking)
-                const timeSinceLastSpoken = now - lastSpeakEndTimeRef.current
+const isBusySpeaking = isSpeakingRef.current || (typeof window !== 'undefined' && 'speechSynthesis' in window && window.speechSynthesis.speaking)
+                const elapsedSinceLastSpeak = now - lastSpeakTimeRef.current
 
-                // Only schedule new coaching if the previous sentence has finished completely and user has breathing room (min 1.8s)
-                if (!isBusySpeaking && timeSinceLastSpoken > 1800) {
-                  // 1. Instant response if subject moves or new condition arises (min 3.2s cadence)
-                  if (isNewUrgent && now - lastSpeakTimeRef.current > 3200) {
-                    msgCycleRef.current = 0
-                    lastSpeakTimeRef.current = now
-                    speakFeedback(topMsg, false)
-                  }
-                  // 2. Real-time coaching cycle: rotate smoothly (min 4.2s cadence)
-                  else if (now - lastSpeakTimeRef.current > 4200) {
-                    msgCycleRef.current = (msgCycleRef.current + 1) % prioritizedMessages.length
-                    lastSpeakTimeRef.current = now
-                    const chosenMsg = prioritizedMessages[msgCycleRef.current] || topMsg
-                    speakFeedback(chosenMsg, false)
-                  }
-                }
-              }
+                // Strictly enforce 5.5 to 6 seconds between any consecutive spoken line!
+                if (!isBusySpeaking && elapsedSinceLastSpeak >= 5500) {
+                  msgCycleRef.current = (msgCycleRef.current + 1) % prioritizedMessages.length
+                  const chosenMsg = prioritizedMessages[msgCycleRef.current] || topMsg
+                  speakFeedback(chosenMsg, false)
+                }              }
             }
           } catch (err) {
             console.error('Failed to parse telemetry frame:', err)
