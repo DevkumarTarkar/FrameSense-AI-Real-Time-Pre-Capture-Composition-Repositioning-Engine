@@ -370,6 +370,8 @@ export default function Page() {
   const lastSpokenRef = useRef<string>('')
   const msgCycleRef = useRef<number>(0)
   const lastSpeakTimeRef = useRef<number>(0)
+  const isSpeakingRef = useRef<boolean>(false)
+  const lastSpeakEndTimeRef = useRef<number>(0)
 
   // Auto-capture & countdown timer refs
   const stableStartTimeRef = useRef<number | null>(null)
@@ -393,6 +395,16 @@ export default function Page() {
   const [gyroPitch, setGyroPitch] = useState<number>(0)
   const [gyroPermissionNeeded, setGyroPermissionNeeded] = useState<boolean>(false)
   const lastLevelSnapRef = useRef<boolean>(false)
+
+  // Cleanup speech synthesis on unmount
+  useEffect(() => {
+    return () => {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel()
+        isSpeakingRef.current = false
+      }
+    }
+  }, [])
 
   // Listen for Phone Gyroscope / DeviceOrientation Event
   useEffect(() => {
@@ -491,7 +503,7 @@ export default function Page() {
   // Conversational Voice Synthesis (Adapted for Solo Mode & Hinglish Natural Prompts)
   const speakFeedback = useCallback(
     (text: string, force = false) => {
-      if ((!voice && !soloMode) || !('speechSynthesis' in window) || !text) return
+      if ((!voice && !soloMode) || typeof window === 'undefined' || !('speechSynthesis' in window) || !text) return
 
       let spokenText = text
       if (voiceLang === 'hinglish') {
@@ -500,10 +512,32 @@ export default function Page() {
         spokenText = getSoloCreatorPrompt(text, isMirrored)
       }
 
+      // If already speaking and this is not a forced priority event, let the full sentence finish!
+      if (!force && (isSpeakingRef.current || window.speechSynthesis.speaking)) {
+        return
+      }
+
       if (!force && spokenText === lastSpokenRef.current) return
 
-      window.speechSynthesis.cancel()
+      // Cancel only on forced priority events (e.g., auto-capture lock or shutter capture)
+      if (force) {
+        window.speechSynthesis.cancel()
+        isSpeakingRef.current = false
+      }
+
       const utterance = new SpeechSynthesisUtterance(spokenText)
+
+      utterance.onstart = () => {
+        isSpeakingRef.current = true
+      }
+      utterance.onend = () => {
+        isSpeakingRef.current = false
+        lastSpeakEndTimeRef.current = Date.now()
+      }
+      utterance.onerror = () => {
+        isSpeakingRef.current = false
+        lastSpeakEndTimeRef.current = Date.now()
+      }
 
       // Auto-select Indian English or Hindi voice if available for authentic accent
       const voices = window.speechSynthesis.getVoices()
@@ -518,16 +552,17 @@ export default function Page() {
         if (indianVoice) {
           utterance.voice = indianVoice
         }
-        utterance.rate = 1.15
+        utterance.rate = 1.0
         utterance.pitch = 1.02
       } else {
-        utterance.rate = 1.15
+        utterance.rate = 1.0
         utterance.pitch = soloMode ? 1.05 : 1.0
       }
 
-      utterance.volume = soloMode ? 1.0 : 0.9
+      utterance.volume = soloMode ? 1.0 : 0.95
       window.speechSynthesis.speak(utterance)
       lastSpokenRef.current = spokenText
+      lastSpeakTimeRef.current = Date.now()
     },
     [voice, soloMode, voiceLang, isMirrored]
   )
@@ -627,18 +662,24 @@ export default function Page() {
                   !topMsg.includes('Hold steady') &&
                   !topMsg.includes('balanced')
 
-                // 1. Instant response if subject moves or new condition arises (~1.1s minimum audio gap)
-                if (isNewUrgent && now - lastSpeakTimeRef.current > 1100) {
-                  msgCycleRef.current = 0
-                  lastSpeakTimeRef.current = now
-                  speakFeedback(topMsg, true)
-                }
-                // 2. Real-time coaching cycle: rotate every 1.65s (within 1-2 sec)
-                else if (now - lastSpeakTimeRef.current > 1650) {
-                  msgCycleRef.current = (msgCycleRef.current + 1) % prioritizedMessages.length
-                  lastSpeakTimeRef.current = now
-                  const chosenMsg = prioritizedMessages[msgCycleRef.current] || topMsg
-                  speakFeedback(chosenMsg, true)
+                const isBusySpeaking = isSpeakingRef.current || (typeof window !== 'undefined' && 'speechSynthesis' in window && window.speechSynthesis.speaking)
+                const timeSinceLastSpoken = now - lastSpeakEndTimeRef.current
+
+                // Only schedule new coaching if the previous sentence has finished completely and user has breathing room (min 1.8s)
+                if (!isBusySpeaking && timeSinceLastSpoken > 1800) {
+                  // 1. Instant response if subject moves or new condition arises (min 3.2s cadence)
+                  if (isNewUrgent && now - lastSpeakTimeRef.current > 3200) {
+                    msgCycleRef.current = 0
+                    lastSpeakTimeRef.current = now
+                    speakFeedback(topMsg, false)
+                  }
+                  // 2. Real-time coaching cycle: rotate smoothly (min 4.2s cadence)
+                  else if (now - lastSpeakTimeRef.current > 4200) {
+                    msgCycleRef.current = (msgCycleRef.current + 1) % prioritizedMessages.length
+                    lastSpeakTimeRef.current = now
+                    const chosenMsg = prioritizedMessages[msgCycleRef.current] || topMsg
+                    speakFeedback(chosenMsg, false)
+                  }
                 }
               }
             }
@@ -1741,7 +1782,13 @@ export default function Page() {
                   </button>
 
                   <button
-                    onClick={() => setVoice(!voice)}
+                    onClick={() => {
+                      if (voice && typeof window !== 'undefined' && 'speechSynthesis' in window) {
+                        window.speechSynthesis.cancel()
+                        isSpeakingRef.current = false
+                      }
+                      setVoice(!voice)
+                    }}
                     className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs shadow-sm transition ${
                       voice ? 'border-[#21866D]/40 bg-[#EAF1ED] text-[#193B38]' : 'border-[#E3E9E5] bg-[#FFFFFF] text-[#647773] hover:text-[#193B38]'
                     }`}
