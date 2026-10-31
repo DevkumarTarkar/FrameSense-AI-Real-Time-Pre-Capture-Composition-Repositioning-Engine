@@ -345,7 +345,7 @@ export default function Page() {
   const [isMirrored, setIsMirrored] = useState(true)
 
   // Voice Language Toggle: 'hinglish' (Default) | 'en'
-  const [voiceLang, setVoiceLang] = useState<'hinglish' | 'en'>('hinglish')
+  const [voiceLang, setVoiceLang] = useState<'hinglish' | 'en'>('en')
 
   const [telemetry, setTelemetry] = useState<Telemetry>({
     score: 0,
@@ -553,9 +553,22 @@ export default function Page() {
         lastSpeakEndTimeRef.current = Date.now()
       }
 
-      // Auto-select Indian English or Hindi voice if available for authentic accent
+      // Auto-select English voice by default, or Indian English/Hindi if hinglish is chosen
       const voices = window.speechSynthesis.getVoices()
-      if (voiceLang === 'hinglish') {
+      if (voiceLang === 'en') {
+        const engVoice = voices.find(
+          (v) =>
+            v.lang.startsWith('en') ||
+            v.lang.includes('US') ||
+            v.lang.includes('GB')
+        )
+        if (engVoice) {
+          utterance.voice = engVoice
+        }
+        utterance.lang = 'en-US'
+        utterance.rate = 0.95
+        utterance.pitch = soloMode ? 1.05 : 1.0
+      } else {
         const indianVoice = voices.find(
           (v) =>
             v.lang.includes('hi') ||
@@ -566,11 +579,8 @@ export default function Page() {
         if (indianVoice) {
           utterance.voice = indianVoice
         }
-        utterance.rate = 0.95 // Relaxed, clear pace
-        utterance.pitch = 1.0
-      } else {
         utterance.rate = 0.95
-        utterance.pitch = soloMode ? 1.05 : 1.0
+        utterance.pitch = 1.0
       }
 
       utterance.volume = soloMode ? 1.0 : 0.95
