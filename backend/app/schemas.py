@@ -3,7 +3,7 @@ FrameSense AI - Request & Response Schemas
 Adheres strictly to WebSocket API contract in PRD Section 10.
 """
 
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
 
 
@@ -23,7 +23,7 @@ class TelemetryResponse(BaseModel):
     face_box: Optional[List[float]] = Field(None, description="Bounding box of primary subject [x1, y1, x2, y2]")
     aesthetic_score: Optional[float] = Field(None, description="Calibrated deep learning aesthetic score from 1.0 to 10.0")
     device: Optional[str] = Field("cuda", description="Hardware compute accelerator")
-    sub_scores: Dict[str, float] = Field(default_factory=dict, description="Detailed sub-scores breakdown")
+    sub_scores: Dict[str, Any] = Field(default_factory=dict, description="Detailed sub-scores breakdown")
     shot_type: Optional[str] = Field("portrait", description="Contextual scene classification: portrait, group, architecture, landscape, food")
     shot_description: Optional[str] = Field(None, description="Human-readable scene description")
     shot_confidence: Optional[float] = Field(None, description="Classifier confidence score [0.0, 1.0]")
