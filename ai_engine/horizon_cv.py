@@ -43,8 +43,14 @@ def detect_horizon_angle(
     # Bilateral or Gaussian blur to suppress noise while preserving structural edges
     blurred = cv2.GaussianBlur(gray, (5, 5), 1.5)
 
-    # Canny Edge Detection
-    edges = cv2.Canny(blurred, 50, 150, apertureSize=3)
+    # Adaptive Canny thresholds based on frame median luminance for robust edge detection in dim/bright conditions
+    v = float(np.median(blurred))
+    lower_thresh = int(max(20.0, 0.67 * v))
+    upper_thresh = int(min(240.0, 1.33 * v))
+    if lower_thresh >= upper_thresh:
+        lower_thresh, upper_thresh = 50, 150
+
+    edges = cv2.Canny(blurred, lower_thresh, upper_thresh, apertureSize=3)
 
     min_line_length = int(w * min_line_length_ratio)
     max_line_gap = int(w * max_line_gap_ratio)
@@ -61,37 +67,52 @@ def detect_horizon_angle(
     if lines is None:
         return None, None
 
-    best_line = None
-    max_length = 0.0
-    dominant_angle = None
+    candidate_lines = []
 
     for line in lines:
         coords = np.array(line).flatten()
         if len(coords) < 4:
             continue
         x1, y1, x2, y2 = int(coords[0]), int(coords[1]), int(coords[2]), int(coords[3])
+
+        # Canonical endpoint ordering: enforce x1 < x2 so dx is always positive
+        if x1 > x2:
+            x1, y1, x2, y2 = x2, y2, x1, y1
+
         dx = x2 - x1
         dy = y2 - y1
 
         length = math.hypot(dx, dy)
-        if length <= 0:
+        if length <= 0 or dx == 0:
             continue
 
-        # Compute line angle in degrees (-90 to +90)
+        # Compute line angle in degrees relative to horizontal: atan2(dy, dx)
         angle_rad = math.atan2(dy, dx)
         angle_deg = math.degrees(angle_rad)
 
-        # Normalize to near-horizontal [-90, 90]
-        if angle_deg > 90.0:
-            angle_deg -= 180.0
-        elif angle_deg < -90.0:
-            angle_deg += 180.0
-
         # Check if line is within plausible horizontal slope
         if abs(angle_deg) <= angle_threshold_deg:
-            if length > max_length:
-                max_length = length
-                dominant_angle = angle_deg
-                best_line = (int(x1), int(y1), int(x2), int(y2))
+            candidate_lines.append((length, angle_deg, (x1, y1, x2, y2)))
+
+    if not candidate_lines:
+        return None, None
+
+    # Sort candidates by line length descending
+    candidate_lines.sort(key=lambda item: item[0], reverse=True)
+    best_length, best_angle, best_line = candidate_lines[0]
+
+    # Weighted consensus across consistent horizon lines within 3.0 degrees
+    consensus_angles = []
+    consensus_weights = []
+    for length, angle, _ in candidate_lines:
+        if abs(angle - best_angle) <= 3.0:
+            w_i = length * length
+            consensus_angles.append(angle * w_i)
+            consensus_weights.append(w_i)
+
+    if consensus_weights and sum(consensus_weights) > 0:
+        dominant_angle = round(sum(consensus_angles) / sum(consensus_weights), 1)
+    else:
+        dominant_angle = round(best_angle, 1)
 
     return dominant_angle, best_line

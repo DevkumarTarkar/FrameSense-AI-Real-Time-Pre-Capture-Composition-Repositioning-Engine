@@ -332,6 +332,7 @@ class VisionEngine:
         dist_score, dist_ratio, generic_dist_msg = evaluate_subject_distance(
             face_width=box_w,
             frame_width=float(w),
+            face_count=len(all_face_boxes),
         )
         # Use precise metric depth prompt if triggered
         final_dist_msg = depth_msg if depth_msg else generic_dist_msg

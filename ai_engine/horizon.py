@@ -4,6 +4,7 @@ Pure mathematical scoring for horizon levelness without any direct OpenCV depend
 Adheres strictly to FrameSense AI PRD Section 8.3.
 """
 
+import math
 from typing import Tuple, Optional
 from ai_engine.contract import EvaluatorResult, EvaluationStatus
 
@@ -33,6 +34,15 @@ def score_horizon_tilt_contract(
 ) -> EvaluatorResult:
     """
     Evaluates horizon tilt and returns standardized EvaluatorResult contract.
+
+    Coordinate & Physics Convention:
+    - In image coordinates, Y increases downward.
+    - If a line slopes downward to the right (dy > 0, dx > 0), atan2(dy, dx) > 0.
+      This corresponds to the camera being rolled counter-clockwise (tilted left).
+      Correction: The user must roll the camera clockwise (tilt right).
+    - If a line slopes upward to the right (dy < 0, dx > 0), atan2(dy, dx) < 0.
+      This corresponds to the camera being rolled clockwise (tilted right).
+      Correction: The user must roll the camera counter-clockwise (tilt left).
     """
     if tilt_degrees is None:
         # PRD §8.3: No confident horizon found (e.g. tight portrait) -> do NOT penalize
@@ -41,27 +51,36 @@ def score_horizon_tilt_contract(
             measured_value=0.0,
             status=EvaluationStatus.UNAVAILABLE,
             recommendation=None,
-            confidence=0.5,
+            confidence=0.0,
             diagnostics={"detected": False},
         )
 
-    abs_tilt = abs(tilt_degrees)
+    try:
+        tilt = float(tilt_degrees)
+        if math.isnan(tilt) or math.isinf(tilt):
+            return EvaluatorResult.unavailable("Non-finite horizon tilt angle")
+    except (ValueError, TypeError):
+        return EvaluatorResult.unavailable("Invalid tilt angle type")
 
+    abs_tilt = abs(tilt)
+
+    # Near-zero tilt within tolerance: optimal level, no correction needed
     if abs_tilt <= LEVEL_TOLERANCE_DEG:
         return EvaluatorResult(
             score=1.0,
-            measured_value=round(tilt_degrees, 1),
+            measured_value=round(tilt, 1),
             status=EvaluationStatus.OPTIMAL,
             recommendation=None,
             confidence=1.0,
             diagnostics={"abs_tilt": round(abs_tilt, 2)},
         )
 
+    # Severe tilt exceeding max tolerance threshold
     if abs_tilt >= MAX_TILT_TOLERANCE_DEG:
-        msg = "Level camera: tilt left" if tilt_degrees > 0 else "Level camera: tilt right"
+        msg = "Level camera: tilt right" if tilt > 0 else "Level camera: tilt left"
         return EvaluatorResult(
             score=0.0,
-            measured_value=round(tilt_degrees, 1),
+            measured_value=round(tilt, 1),
             status=EvaluationStatus.CRITICAL,
             recommendation=msg,
             confidence=1.0,
@@ -72,11 +91,11 @@ def score_horizon_tilt_contract(
     span = MAX_TILT_TOLERANCE_DEG - LEVEL_TOLERANCE_DEG
     excess = abs_tilt - LEVEL_TOLERANCE_DEG
     score = max(0.0, 1.0 - (excess / span))
-    msg = "Level camera: tilt left slightly" if tilt_degrees > 0 else "Level camera: tilt right slightly"
+    msg = "Level camera: tilt right slightly" if tilt > 0 else "Level camera: tilt left slightly"
 
     return EvaluatorResult(
         score=round(score, 3),
-        measured_value=round(tilt_degrees, 1),
+        measured_value=round(tilt, 1),
         status=EvaluationStatus.SUBOPTIMAL,
         recommendation=msg,
         confidence=1.0,

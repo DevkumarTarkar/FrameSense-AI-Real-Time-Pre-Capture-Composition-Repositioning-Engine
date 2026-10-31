@@ -5,6 +5,7 @@ and generates context-adaptive vertical framing and camera tilt guidance.
 Adheres strictly to FrameSense AI PRD Section 8.2 and Cinematography Standards.
 """
 
+import math
 from typing import Tuple, Optional
 from ai_engine.contract import EvaluatorResult, EvaluationStatus
 
@@ -81,29 +82,52 @@ def evaluate_headroom_contract(
 ) -> EvaluatorResult:
     """
     Evaluates headroom and returns standardized EvaluatorResult contract.
+
+    Physics and Coordinate Conventions:
+    - Image Y-axis originates at top (0.0) and increases downwards.
+    - If headroom is insufficient (head_top_y near 0):
+      Tilting the camera UP shifts the viewfinder scene downward, restoring positive clearance.
+    - If headroom is excessive (head_top_y too large):
+      Tilting the camera DOWN shifts the viewfinder scene upward, reducing wasted dead space.
     """
-    if frame_height <= 0.0:
-        return EvaluatorResult(
-            score=0.0,
-            measured_value=0.0,
-            status=EvaluationStatus.UNAVAILABLE,
-            recommendation="Invalid frame height",
-            confidence=0.0,
-            diagnostics={"error": "frame_height <= 0"},
-        )
+    try:
+        head_y = float(head_top_y)
+        f_height = float(frame_height)
+        if math.isnan(head_y) or math.isinf(head_y) or math.isnan(f_height) or math.isinf(f_height):
+            return EvaluatorResult.unavailable("Non-finite input coordinates")
+    except (ValueError, TypeError):
+        return EvaluatorResult.unavailable("Invalid input types")
+
+    if f_height <= 0.0:
+        return EvaluatorResult.unavailable("Invalid frame height (<= 0)", {"error": "frame_height <= 0"})
 
     # Estimate anatomical top of head (hair vertex) when cranial compensation is requested with face height
-    if apply_cranial_compensation and face_height is not None and face_height > 0.0:
-        cranial_offset = DEFAULT_CRANIAL_SCALING_FACTOR * face_height
-        true_skull_top_y = max(0.0, head_top_y - cranial_offset)
+    if apply_cranial_compensation and face_height is not None:
+        try:
+            fh = float(face_height)
+            if not (math.isnan(fh) or math.isinf(fh)) and fh > 0.0:
+                cranial_offset = DEFAULT_CRANIAL_SCALING_FACTOR * fh
+                true_skull_top_y = max(0.0, head_y - cranial_offset)
+            else:
+                true_skull_top_y = head_y
+        except (ValueError, TypeError):
+            true_skull_top_y = head_y
     else:
-        true_skull_top_y = head_top_y
+        true_skull_top_y = head_y
 
-    ratio = max(0.0, true_skull_top_y / frame_height)
-    face_ratio = (face_height / frame_height) if (face_height is not None and face_height > 0.0) else None
+    ratio = max(0.0, true_skull_top_y / f_height)
+    face_ratio = None
+    if face_height is not None:
+        try:
+            fh = float(face_height)
+            if not (math.isnan(fh) or math.isinf(fh)) and fh > 0.0:
+                face_ratio = fh / f_height
+        except (ValueError, TypeError):
+            pass
 
     ideal_min, ideal_max, max_acceptable = get_contextual_headroom_bands(face_ratio)
 
+    # Optimal range: no corrective action required
     if ideal_min <= ratio <= ideal_max:
         return EvaluatorResult(
             score=1.0,
@@ -118,11 +142,11 @@ def evaluate_headroom_contract(
             },
         )
 
+    # Headroom too tight / head clipped at top: instruct camera to tilt UP
     if ratio < ideal_min:
-        # Headroom too tight or head cut off at top
         score = max(0.0, ratio / ideal_min)
         status = EvaluationStatus.CRITICAL if ratio < (ideal_min * 0.4) else EvaluationStatus.SUBOPTIMAL
-        msg = "Tilt camera down (headroom too tight)"
+        msg = "Tilt camera up (headroom too tight)"
         return EvaluatorResult(
             score=round(score, 3),
             measured_value=round(ratio, 3),
@@ -132,16 +156,16 @@ def evaluate_headroom_contract(
             diagnostics={"reason": "insufficient_headroom", "deficit": round(ideal_min - ratio, 3)},
         )
 
-    # Excessive headroom / dead space above head
+    # Excessive headroom / dead space above head: instruct camera to tilt DOWN
     excess = ratio - ideal_max
     span = max(0.01, max_acceptable - ideal_max)
     score = max(0.0, 1.0 - (excess / span))
     status = EvaluationStatus.SUBOPTIMAL if score > 0.4 else EvaluationStatus.CRITICAL
 
     if ratio > 0.25:
-        msg = "Tilt camera up or step closer (excessive headroom)"
+        msg = "Tilt camera down or step closer (excessive headroom)"
     else:
-        msg = "Tilt camera up slightly"
+        msg = "Tilt camera down slightly"
 
     return EvaluatorResult(
         score=round(score, 3),

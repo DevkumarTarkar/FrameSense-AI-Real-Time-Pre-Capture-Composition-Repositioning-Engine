@@ -64,20 +64,20 @@ def test_headroom_ideal_range():
 
 
 def test_headroom_too_tight():
-    """Head top touching or near frame top (< 0.10) should be penalized and prompt tilt down."""
+    """Head top touching or near frame top (< 0.10) should be penalized and prompt tilt up."""
     frame_h = 1000.0
     score, ratio, msg = evaluate_headroom(40.0, frame_h)  # 4% headroom
     assert score < 0.5
     assert ratio == 0.04
-    assert "Tilt camera down" in msg
+    assert "Tilt camera up" in msg
 
 
 def test_headroom_excessive_space():
-    """Head positioned too low (> 0.25) should prompt to step closer or tilt up."""
+    """Head positioned too low (> 0.25) should prompt to step closer or tilt down."""
     frame_h = 1000.0
     score, ratio, msg = evaluate_headroom(300.0, frame_h)  # 30% headroom
     assert score < 0.5
-    assert "Tilt camera up or step closer" in msg
+    assert "Tilt camera down" in msg
 
 
 def test_subject_distance_ideal():
@@ -133,14 +133,30 @@ def test_composite_score_ideal_framing():
         tilt_score=1.0,
         distance_score=1.0,
         guidance_candidates=[],
-        target_point=(213.3, 160.0),
-        face_box=[120.0, 80.0, 260.0, 240.0],
+        target_point=(333.3, 333.3),
+        face_box=[100.0, 100.0, 300.0, 300.0],
         has_subject=True,
     )
-
     assert telemetry.score == 100
     assert "Excellent framing" in telemetry.messages[0]
-    assert telemetry.target_x == 213.3
+
+
+def test_composite_score_head_cut_critical_gating():
+    """When headroom is critically low or head is cut (score <= 0.20), composite score must be capped at <= 45."""
+    candidates = [(0.0, "Tilt camera up (headroom too tight)")]
+    telemetry = compute_composite_score(
+        thirds_score=1.0,
+        headroom_score=0.0,  # Head cut off
+        tilt_score=1.0,
+        distance_score=1.0,
+        guidance_candidates=candidates,
+        target_point=(0.33, 0.33),
+        face_box=[100, 0, 300, 200],
+        has_subject=True,
+    )
+    # Even though other signals are 100%, critical failure caps score at <= 45
+    assert telemetry.score <= 45
+    assert telemetry.messages[0] == "Tilt camera up (headroom too tight)"
 
 
 def test_composite_score_no_subject():

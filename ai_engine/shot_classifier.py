@@ -89,11 +89,23 @@ def classify_shot_type(
         # If face occupies significant area, high-confidence portrait
         ratio = face_w / float(w)
         conf = 0.95 if ratio >= 0.10 else 0.80
+
+        # Boundary clipping detection: guard against cut head or clipped boundaries
+        edge_clipping_alert = None
+        if box[1] <= 0.03 * h:
+            edge_clipping_alert = "Head cut off at top of frame — tilt camera up"
+        elif box[0] <= 0.03 * w:
+            edge_clipping_alert = "Subject clipped on left edge — pan camera left"
+        elif box[2] >= 0.97 * w:
+            edge_clipping_alert = "Subject clipped on right edge — pan camera right"
+
+        guidance = edge_clipping_alert or "Align eyes with upper third grid; maintain natural headroom"
         return ShotTypeResult(
             shot_type="portrait",
             confidence=conf,
             description="Solo Portrait Session",
-            adaptive_guidance="Align eyes with upper third grid; maintain natural headroom",
+            adaptive_guidance=guidance,
+            edge_clipped_subject=edge_clipping_alert,
         )
 
     # ---------------------------------------------------------

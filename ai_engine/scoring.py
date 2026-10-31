@@ -84,6 +84,18 @@ def compute_composite_score(
 
     final_score = int(round(max(0.0, min(1.0, composite)) * 100))
 
+    # Critical Failure Gating (Photography standards):
+    # A photo with a severed head (headroom critically low/cut) or subject clipped at borders
+    # must NOT receive a passing score (>= 50 "Good Alignment"). Cap at <= 45 ("Repositioning Required").
+    has_critical_failure = False
+    if headroom_score <= 0.20:
+        has_critical_failure = True
+    if any(item[0] <= 0.15 for item in guidance_candidates if item[1] is not None):
+        has_critical_failure = True
+
+    if has_critical_failure:
+        final_score = min(final_score, 45)
+
     # Sort guidance candidates by lowest score first (highest urgency)
     sorted_prompts = sorted(
         [item for item in guidance_candidates if item[1] is not None],
