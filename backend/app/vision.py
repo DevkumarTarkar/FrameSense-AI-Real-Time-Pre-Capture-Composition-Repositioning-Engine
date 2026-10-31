@@ -73,33 +73,33 @@ class VisionEngine:
             logger.warning("MediaPipe not available.")
 
     def _init_nima(self):
-        # 1. First priority: Load fine-tuned MobileNetV3-NIMA weights from ml_model/weights
+        # 1. Primary Engine: Official Google SOTA NIMA (InceptionV2 trained on 255k AVA photos) on RTX 3050 CUDA
+        if pyiqa:
+            try:
+                logger.info(f"Loading official Google SOTA NIMA (InceptionV2-AVA) on compute device: {self.device}")
+                self.nima_metric = pyiqa.create_metric("nima", device=self.device)
+                logger.info("Official Google SOTA NIMA engine successfully activated on RTX 3050 CUDA GPU.")
+                return
+            except Exception as e:
+                logger.error(f"Failed to load PyIQA official NIMA metric: {e}")
+                self.nima_metric = None
+
+        # 2. Secondary fallback: Local MobileNetV3-NIMA weights if available
         weights_path = Path(__file__).resolve().parent.parent.parent / "ml_model" / "weights" / "best_aesthetic_mobilenet.pth"
         if weights_path.exists():
             try:
-                logger.info(f"Loading MobileNetV3-NIMA checkpoint from {weights_path} on {self.device}")
+                logger.info(f"Loading MobileNetV3-NIMA fallback checkpoint from {weights_path} on {self.device}")
                 model = build_aesthetic_model(pretrained=False).to(self.device)
                 checkpoint = torch.load(str(weights_path), map_location=self.device)
                 state_dict = checkpoint.get("model_state_dict", checkpoint)
                 model.load_state_dict(state_dict)
                 model.eval()
                 self.nima_model = model
-                logger.info("MobileNetV3-NIMA successfully loaded on RTX 3050 CUDA / Host.")
+                logger.info("MobileNetV3-NIMA fallback loaded.")
                 return
             except Exception as e:
                 logger.warning(f"Failed to load MobileNetV3 checkpoint: {e}")
                 self.nima_model = None
-
-        # 2. Secondary fallback: Official PyIQA metric if installed
-        if pyiqa:
-            try:
-                logger.info(f"Loading official PyIQA NIMA metric on compute device: {self.device}")
-                self.nima_metric = pyiqa.create_metric("nima", device=self.device)
-                logger.info("Official NIMA model successfully loaded on GPU.")
-                return
-            except Exception as e:
-                logger.error(f"Failed to load PyIQA NIMA metric: {e}")
-                self.nima_metric = None
 
         logger.warning("No aesthetic neural model available; will use fallback scores.")
 
@@ -118,16 +118,26 @@ class VisionEngine:
 
     def compute_aesthetic_score(self, frame_bgr: np.ndarray) -> Tuple[float, float]:
         """
-        Runs real-time deep learning aesthetic evaluation on RTX 3050 CUDA,
+        Runs real-time deep learning aesthetic evaluation on RTX 3050 CUDA using Google SOTA NIMA,
         calibrated with physical perceptual indicators (sharpness, dynamic contrast, color richness).
         Returns:
             calibrated_score (float): Normalized human scale [1.0, 10.0]
-            raw_score (float): Raw research AVA score [~3.0, ~5.8]
+            raw_score (float): Raw research AVA score [~2.0, ~6.5]
         """
         raw_score = 5.0
 
-        # 1. Neural Backbone Inference (MobileNetV3 on CUDA)
-        if self.nima_model is not None:
+        # 1. Neural Backbone Inference (Priority: Official SOTA NIMA on RTX 3050 CUDA)
+        if self.nima_metric is not None:
+            try:
+                rgb_resized = cv2.resize(cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB), (224, 224))
+                tensor_frame = (
+                    torch.from_numpy(rgb_resized).permute(2, 0, 1).unsqueeze(0).float() / 255.0
+                ).to(self.device)
+                with torch.no_grad():
+                    raw_score = float(self.nima_metric(tensor_frame).item())
+            except Exception as e:
+                logger.error(f"Official NIMA metric inference error: {e}")
+        elif self.nima_model is not None:
             try:
                 rgb_resized = cv2.resize(cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB), (224, 224))
                 tensor_frame = (
@@ -161,9 +171,13 @@ class VisionEngine:
             # Perceptual composite aesthetic multiplier
             visual_multiplier = (sharpness_factor * 0.40) + (contrast_factor * 0.35) + (sat_factor * 0.25)
             
-            # Calibrate 1.0 - 10.0 scale reflecting true visual quality
-            base_calibrated = 1.0 + (raw_score - 3.2) * (9.0 / (5.6 - 3.2))
-            calibrated = float(np.clip(base_calibrated * visual_multiplier, 1.5, 9.8))
+            # Dynamic Calibration:
+            # - Dark/covered camera or blurry (raw ~2.4) -> calibrated ~1.5 - 2.8
+            # - Average scene (raw ~4.5) -> calibrated ~6.0 - 7.0
+            # - High-quality sharp composition (raw ~5.5+) -> calibrated ~8.0 - 9.5
+            norm_aesthetic = (raw_score - 2.2) / 3.8
+            base_calibrated = 1.5 + (np.clip(norm_aesthetic, 0.0, 1.0) * 7.5)
+            calibrated = float(np.clip(base_calibrated * (0.6 + visual_multiplier * 0.4), 1.2, 9.8))
 
             return round(calibrated, 1), round(raw_score, 2)
         except Exception as e:
@@ -382,8 +396,6 @@ class VisionEngine:
         telemetry.estimated_distance_ft = dist_ft
         telemetry.estimated_distance_m = dist_m
         telemetry.all_faces = all_face_boxes
-
-        return telemetry
 
         return telemetry
 
