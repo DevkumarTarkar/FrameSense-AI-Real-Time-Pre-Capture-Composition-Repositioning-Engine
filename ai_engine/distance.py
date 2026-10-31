@@ -1,13 +1,15 @@
 """
-FrameSense AI - Subject Distance Evaluator
+FrameSense AI - Subject Framing Scale Evaluator
 Assesses subject distance based on face width to frame width proportion.
-Adheres strictly to PRD Section 8.4.
+Adheres strictly to FrameSense AI PRD Section 8.4.
 """
 
 from typing import Tuple, Optional
+from ai_engine.contract import EvaluatorResult, EvaluationStatus
 
-TOO_FAR_THRESHOLD = 0.10
-TOO_CLOSE_THRESHOLD = 0.52
+# Biometric framing scale thresholds for portrait composition
+DEFAULT_TOO_FAR_THRESHOLD = 0.10     # Subject face occupies < 10% of frame width
+DEFAULT_TOO_CLOSE_THRESHOLD = 0.52   # Subject face occupies > 52% of frame width
 
 
 def evaluate_subject_distance(
@@ -16,29 +18,53 @@ def evaluate_subject_distance(
 ) -> Tuple[float, float, Optional[str]]:
     """
     Evaluates subject distance ratio: face_width / frame_width.
-
-    Parameters:
-        face_width (float): Width of the detected face bounding box.
-        frame_width (float): Total width of the frame.
+    Maintains 100% backward-compatible return signature.
 
     Returns:
         score (float): Distance score [0.0, 1.0].
         ratio (float): face_width / frame_width ratio.
         message (str | None): Actionable guidance prompt.
     """
-    if frame_width <= 0:
-        return 0.0, 0.0, "Invalid frame width"
+    result = evaluate_subject_distance_contract(face_width, frame_width)
+    return result.score, result.measured_value, result.recommendation
+
+
+def evaluate_subject_distance_contract(
+    face_width: float,
+    frame_width: float,
+) -> EvaluatorResult:
+    """
+    Evaluates subject framing scale and returns standardized EvaluatorResult contract.
+    """
+    if frame_width <= 0.0:
+        return EvaluatorResult(
+            score=0.0,
+            measured_value=0.0,
+            status=EvaluationStatus.UNAVAILABLE,
+            recommendation="Invalid frame width",
+            confidence=0.0,
+        )
 
     ratio = max(0.0, face_width / frame_width)
 
-    if ratio > TOO_CLOSE_THRESHOLD:
+    if ratio > DEFAULT_TOO_CLOSE_THRESHOLD:
         score = 0.4
-        message = "Step back slightly (subject too close)"
-    elif ratio < TOO_FAR_THRESHOLD:
+        msg = "Step back slightly (subject too close)"
+        status = EvaluationStatus.SUBOPTIMAL
+    elif ratio < DEFAULT_TOO_FAR_THRESHOLD:
         score = 0.4
-        message = "Step closer (subject too far)"
+        msg = "Step closer (subject too far)"
+        status = EvaluationStatus.SUBOPTIMAL
     else:
         score = 1.0
-        message = None
+        msg = None
+        status = EvaluationStatus.OPTIMAL
 
-    return round(score, 3), round(ratio, 3), message
+    return EvaluatorResult(
+        score=round(score, 3),
+        measured_value=round(ratio, 3),
+        status=status,
+        recommendation=msg,
+        confidence=1.0,
+        diagnostics={"face_width_px": round(face_width, 1), "frame_width_px": round(frame_width, 1)},
+    )

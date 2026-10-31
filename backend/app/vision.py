@@ -277,43 +277,10 @@ class VisionEngine:
         head_top_y = ymin
         face_box = [round(xmin, 1), round(ymin, 1), round(xmin + box_w, 1), round(ymin + box_h, 1)]
 
-        # 5. Rule of Thirds
-        thirds_score, target_pt, dist, thirds_msg = evaluate_rule_of_thirds(
-            center_x=center_x,
-            center_y=center_y,
-            frame_width=float(w),
-            frame_height=float(h),
-        )
-
-        # 6. Headroom Clearance
-        headroom_score, headroom_ratio, headroom_msg = evaluate_headroom(
-            head_top_y=head_top_y,
-            frame_height=float(h),
-        )
-
-        # 7. Monocular Metric Depth & Subject Distance
-        dist_m, dist_ft, depth_score, depth_msg = estimate_metric_face_distance(
-            face_box=face_box,
-            frame_width=float(w),
-            frame_height=float(h),
-        )
-        dist_score, dist_ratio, generic_dist_msg = evaluate_subject_distance(
-            face_width=box_w,
-            frame_width=float(w),
-        )
-        # Use precise metric depth prompt if triggered
-        final_dist_msg = depth_msg if depth_msg else generic_dist_msg
-        final_dist_score = min(depth_score, dist_score)
-
-        # 8. Face Lighting & Harsh Backlight Quality
-        lighting_score, face_lum, lighting_status, lighting_msg = evaluate_face_lighting(
-            frame_bgr=frame_bgr,
-            face_box=face_box,
-        )
-
-        # 9. Eye-Level Perspective, Chin Angle & 45-Degree Pose Analysis
+        # 5. Extract Landmarks for Eye-Level Perspective, Gaze & Lead-Room Analysis
         eye_y, nose_y, mouth_y = None, None, None
         re_x, re_y, le_x, le_y, nose_x = None, None, None, None, None
+        subject_yaw = None
         angle_coaching_msg = None
         try:
             kps = primary_detection.location_data.relative_keypoints
@@ -328,14 +295,53 @@ class VisionEngine:
                 mouth_y = kps[3].y * h
                 eye_y = (re_y + le_y) / 2.0
 
-                # If perfectly symmetric/flat front, recommend 45-degree angle for dramatic depth
                 d_r = abs(nose_x - re_x)
                 d_l = abs(nose_x - le_x)
                 eye_span = max(10.0, abs(re_x - le_x))
-                if abs(d_r - d_l) / eye_span < 0.08 and shot_res.shot_type == "portrait":
+                subject_yaw = (d_r - d_l) / eye_span
+
+                # If perfectly symmetric/flat front, recommend 45-degree angle for dramatic depth
+                if abs(subject_yaw) < 0.08 and shot_res.shot_type == "portrait":
                     angle_coaching_msg = "Turn face slightly at 45° angle for cinematic portrait depth"
         except Exception:
             pass
+
+        # 6. Rule of Thirds & Lead-Room Composition Alignment
+        thirds_score, target_pt, dist, thirds_msg = evaluate_rule_of_thirds(
+            center_x=center_x,
+            center_y=center_y,
+            frame_width=float(w),
+            frame_height=float(h),
+            subject_yaw=subject_yaw,
+        )
+
+        # 7. Anatomical & Shot-Adaptive Headroom Clearance
+        headroom_score, headroom_ratio, headroom_msg = evaluate_headroom(
+            head_top_y=head_top_y,
+            frame_height=float(h),
+            face_height=box_h,
+            apply_cranial_compensation=True,
+        )
+
+        # 8. Monocular Metric Depth & Subject Distance
+        dist_m, dist_ft, depth_score, depth_msg = estimate_metric_face_distance(
+            face_box=face_box,
+            frame_width=float(w),
+            frame_height=float(h),
+        )
+        dist_score, dist_ratio, generic_dist_msg = evaluate_subject_distance(
+            face_width=box_w,
+            frame_width=float(w),
+        )
+        # Use precise metric depth prompt if triggered
+        final_dist_msg = depth_msg if depth_msg else generic_dist_msg
+        final_dist_score = min(depth_score, dist_score)
+
+        # 9. Face Lighting & Harsh Backlight Quality
+        lighting_score, face_lum, lighting_status, lighting_msg = evaluate_face_lighting(
+            frame_bgr=frame_bgr,
+            face_box=face_box,
+        )
 
         perspective_score, perspective_status, perspective_msg = evaluate_camera_perspective(
             face_box=face_box,
