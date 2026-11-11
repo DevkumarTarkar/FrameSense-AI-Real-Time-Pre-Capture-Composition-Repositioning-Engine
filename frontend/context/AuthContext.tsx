@@ -32,10 +32,11 @@ export interface User {
 
 interface AuthContextType {
   user: User | null
+  token: string | null
   isAuthenticated: boolean
   isLoading: boolean
-  login: (email: string, name?: string, role?: string, dob?: string) => void
-  signup: (name: string, email: string, role?: string, dob?: string) => void
+  login: (email: string, name?: string, role?: string, dob?: string, token?: string) => void
+  signup: (name: string, email: string, role?: string, dob?: string, token?: string) => void
   updateProfile: (updatedData: Partial<User>) => void
   logout: () => void
 }
@@ -43,9 +44,11 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 const STORAGE_KEY = 'framesense_user_session'
+const TOKEN_KEY = 'framesense_jwt_token'
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
+  const [token, setToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
   const pathname = usePathname()
@@ -54,9 +57,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY)
+      const storedToken = localStorage.getItem(TOKEN_KEY)
       if (stored) {
         const parsed = JSON.parse(stored)
         setUser(parsed)
+      }
+      if (storedToken) {
+        setToken(storedToken)
       }
     } catch (e) {
       console.error('Failed to parse auth session:', e)
@@ -82,7 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user, isLoading, pathname, router])
 
-  const login = (email: string, name?: string, role?: string, dob?: string) => {
+  const login = (email: string, name?: string, role?: string, dob?: string, authToken?: string) => {
     let resolvedFirst = 'Dev'
     let resolvedMiddle = 'Kumar'
     let resolvedLast = 'Tarkar'
@@ -135,10 +142,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     setUser(newUser)
     localStorage.setItem(STORAGE_KEY, JSON.stringify(newUser))
+    if (authToken) {
+      setToken(authToken)
+      localStorage.setItem(TOKEN_KEY, authToken)
+    }
     router.replace('/')
   }
 
-  const signup = (name: string, email: string, role?: string, dob?: string) => {
+  const signup = (name: string, email: string, role?: string, dob?: string, authToken?: string) => {
     const parts = name.trim().split(' ')
     const resolvedFirst = parts[0] || 'Photographer'
     const resolvedMiddle = parts.length > 2 ? parts[1] : ''
@@ -173,6 +184,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     setUser(newUser)
     localStorage.setItem(STORAGE_KEY, JSON.stringify(newUser))
+    if (authToken) {
+      setToken(authToken)
+      localStorage.setItem(TOKEN_KEY, authToken)
+    }
     router.replace('/')
   }
 
@@ -199,7 +214,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = () => {
     setUser(null)
+    setToken(null)
     localStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem(TOKEN_KEY)
     router.replace('/login')
   }
 
@@ -207,6 +224,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
+        token,
         isAuthenticated: !!user,
         isLoading,
         login,

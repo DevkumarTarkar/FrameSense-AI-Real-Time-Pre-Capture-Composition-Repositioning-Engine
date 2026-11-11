@@ -84,9 +84,10 @@ export default function RegisterPage() {
       })
 
       if (res.ok) {
+        const data = await res.json()
         setSuccessMessage('Account created successfully! Logging you in...')
         setTimeout(() => {
-          signup(fullName.trim(), email.trim(), 'Photographer', dob)
+          signup(fullName.trim(), email.trim(), 'Photographer', dob, data.access_token)
         }, 700)
         return
       } else {

@@ -52,7 +52,8 @@ export default function LoginPage() {
             data.user?.email || email.trim(),
             data.user?.full_name,
             data.user?.role,
-            data.user?.dob
+            data.user?.dob,
+            data.access_token
           )
         }, 600)
         return

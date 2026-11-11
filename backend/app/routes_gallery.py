@@ -34,6 +34,7 @@ class CreateCaptureRequest(BaseModel):
     shot_type: Optional[str] = Field("portrait", description="Contextual scene mode")
     distance_ft: Optional[float] = Field(None, description="Estimated distance in feet")
     sub_scores: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Sub-scores map")
+    user_email: Optional[str] = Field("guest", description="Email of capturing photographer")
 
 
 @router.post("", status_code=201)
@@ -76,9 +77,10 @@ async def create_capture(payload: CreateCaptureRequest):
             shot_type=payload.shot_type or "portrait",
             distance_ft=payload.distance_ft,
             sub_scores=payload.sub_scores,
+            user_email=payload.user_email or "guest",
         )
 
-        logger.info(f"Saved capture {capture_id} (Score: {payload.score}) to SQLite.")
+        logger.info(f"Saved capture {capture_id} (User: {payload.user_email}, Score: {payload.score}) to SQLite.")
         return {"success": True, "capture": record}
 
     except HTTPException:
@@ -89,10 +91,10 @@ async def create_capture(payload: CreateCaptureRequest):
 
 
 @router.get("")
-async def list_captures(limit: int = 100, offset: int = 0):
-    """List all saved captures from SQLite, ordered by newest first."""
+async def list_captures(limit: int = 100, offset: int = 0, user_email: Optional[str] = None):
+    """List saved captures from SQLite, ordered by newest first, optionally filtered by user_email."""
     try:
-        captures = fetch_all_captures(limit=limit, offset=offset)
+        captures = fetch_all_captures(limit=limit, offset=offset, user_email=user_email)
         return {"success": True, "count": len(captures), "captures": captures}
     except Exception as e:
         logger.error(f"Error fetching captures: {e}", exc_info=True)

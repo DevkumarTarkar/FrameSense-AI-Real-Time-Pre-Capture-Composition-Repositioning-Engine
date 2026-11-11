@@ -52,10 +52,16 @@ def init_db():
                 shot_type TEXT DEFAULT 'portrait',
                 distance_ft REAL,
                 sub_scores TEXT,
+                user_email TEXT DEFAULT 'guest',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
             """
         )
+        # Handle migration for existing databases without user_email
+        cursor.execute("PRAGMA table_info(captures)")
+        existing_cols = [col[1] for col in cursor.fetchall()]
+        if "user_email" not in existing_cols:
+            cursor.execute("ALTER TABLE captures ADD COLUMN user_email TEXT DEFAULT 'guest'")
         cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS users (
@@ -141,9 +147,11 @@ def insert_capture(
     shot_type: str = "portrait",
     distance_ft: Optional[float] = None,
     sub_scores: Optional[Dict[str, Any]] = None,
+    user_email: Optional[str] = "guest",
 ) -> Dict[str, Any]:
     """Inserts a new capture entry into SQLite."""
     sub_scores_json = json.dumps(sub_scores or {})
+    clean_email = (user_email or "guest").strip().lower()
     with get_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
@@ -151,8 +159,8 @@ def insert_capture(
             INSERT INTO captures (
                 id, filename, image_url, timestamp, date,
                 score, aesthetic, grade, verdict, shot_type,
-                distance_ft, sub_scores
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                distance_ft, sub_scores, user_email
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 capture_id,
@@ -167,6 +175,7 @@ def insert_capture(
                 shot_type,
                 distance_ft,
                 sub_scores_json,
+                clean_email,
             ),
         )
         conn.commit()
@@ -185,21 +194,33 @@ def insert_capture(
         "shot_type": shot_type,
         "distance_ft": distance_ft,
         "sub_scores": sub_scores or {},
+        "user_email": clean_email,
     }
 
 
-def fetch_all_captures(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
-    """Retrieves all captures sorted by creation date descending."""
+def fetch_all_captures(limit: int = 100, offset: int = 0, user_email: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Retrieves all captures sorted by creation date descending, optionally filtered by user_email."""
     with get_db_connection() as conn:
         cursor = conn.cursor()
-        cursor.execute(
-            """
-            SELECT * FROM captures 
-            ORDER BY created_at DESC 
-            LIMIT ? OFFSET ?
-            """,
-            (limit, offset),
-        )
+        if user_email and user_email.lower() not in ("all", "*"):
+            cursor.execute(
+                """
+                SELECT * FROM captures 
+                WHERE LOWER(user_email) = ?
+                ORDER BY created_at DESC 
+                LIMIT ? OFFSET ?
+                """,
+                (user_email.strip().lower(), limit, offset),
+            )
+        else:
+            cursor.execute(
+                """
+                SELECT * FROM captures 
+                ORDER BY created_at DESC 
+                LIMIT ? OFFSET ?
+                """,
+                (limit, offset),
+            )
         rows = cursor.fetchall()
 
     results = []
@@ -210,6 +231,9 @@ def fetch_all_captures(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]
                 sub_scores_dict = json.loads(r["sub_scores"])
             except Exception:
                 sub_scores_dict = {}
+
+        cols = r.keys()
+        user_val = r["user_email"] if "user_email" in cols else "guest"
 
         results.append(
             {
@@ -226,6 +250,7 @@ def fetch_all_captures(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]
                 "shot_type": r["shot_type"],
                 "distance_ft": r["distance_ft"],
                 "sub_scores": sub_scores_dict,
+                "user_email": user_val,
                 "created_at": r["created_at"],
             }
         )

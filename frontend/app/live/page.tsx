@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
+import { useAuth } from '@/context/AuthContext'
 import Navbar from '@/components/Navbar'
 import Sidebar from '@/components/Sidebar'
 import Footer from '@/components/Footer'
@@ -320,6 +321,7 @@ function getSoloCreatorPrompt(msg: string, isMirrored = false): string {
 }
 
 export default function Page() {
+  const { user } = useAuth()
   const [isStreamPaused, setIsStreamPaused] = useState(false)
   const [voice, setVoice] = useState(true)
   const [grid, setGrid] = useState(true)
@@ -815,6 +817,7 @@ const isBusySpeaking = isSpeakingRef.current || (typeof window !== 'undefined' &
               shot_type: telemetry.shot_type || 'portrait',
               distance_ft: telemetry.estimated_distance_ft || null,
               sub_scores: telemetry.sub_scores || {},
+              user_email: user?.email || 'guest',
             }),
           }).catch((err) => {
             console.warn('Backend SQLite upload skipped (fallback mode):', err)

@@ -1,0 +1,41 @@
+# FrameSense AI - Production Frontend Container (Next.js 16)
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Enable pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# Copy package configurations
+COPY frontend/package.json frontend/pnpm-lock.yaml* ./
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile || pnpm install
+
+# Copy application source code
+COPY frontend/ ./
+
+# Disable Next.js telemetry during build
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
+
+# Build the Next.js production bundle
+RUN pnpm run build
+
+# Runner stage
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+# Copy built artifacts
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
+
+EXPOSE 3000
+
+CMD ["npm", "run", "start"]

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import Link from 'next/link'
+import { useAuth } from '@/context/AuthContext'
 import Navbar from '@/components/Navbar'
 import Sidebar from '@/components/Sidebar'
 import Footer from '@/components/Footer'
@@ -34,6 +35,7 @@ interface SessionCapture {
   verdict: string
   shot_type?: string
   distance_ft?: number | null
+  user_email?: string
   sub_scores: {
     thirds: number
     headroom: number
@@ -44,6 +46,8 @@ interface SessionCapture {
 }
 
 export default function GalleryPage() {
+  const { user } = useAuth()
+  const [scope, setScope] = useState<'all' | 'mine'>('all')
   const [filter, setFilter] = useState<'all' | 'master' | 'good' | 'retake'>('all')
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'highest' | 'lowest'>('newest')
   const [searchQuery, setSearchQuery] = useState<string>('')
@@ -80,6 +84,7 @@ export default function GalleryPage() {
               verdict: item.verdict,
               shot_type: item.shot_type || 'portrait',
               distance_ft: item.distance_ft,
+              user_email: item.user_email || 'guest',
               sub_scores: item.sub_scores || { thirds: 35, headroom: 18, tilt: 18, distance: 18 },
             }
           })
@@ -168,6 +173,12 @@ export default function GalleryPage() {
 
   const filteredAndSortedCaptures = useMemo(() => {
     let result = captures.filter((item) => {
+      if (scope === 'mine' && user?.email) {
+        if ((item.user_email || 'guest').toLowerCase() !== user.email.toLowerCase()) {
+          return false
+        }
+      }
+
       if (filter === 'master') {
         if (item.grade !== 'A+' && item.grade !== 'A') return false
       } else if (filter === 'good') {
@@ -219,6 +230,45 @@ export default function GalleryPage() {
 
     if (selectedPhoto?.id === id) {
       setSelectedPhoto(null)
+    }
+  }
+
+  const downloadWithWatermark = (photo: SessionCapture) => {
+    if (!photo.thumbnail) return
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.src = photo.thumbnail
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = img.width || 1280
+      canvas.height = img.height || 720
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return
+
+      ctx.drawImage(img, 0, 0)
+      const bannerHeight = Math.max(54, Math.round(canvas.height * 0.08))
+      ctx.fillStyle = 'rgba(15, 23, 21, 0.90)'
+      ctx.fillRect(0, canvas.height - bannerHeight, canvas.width, bannerHeight)
+
+      ctx.fillStyle = '#21866D'
+      ctx.fillRect(0, canvas.height - bannerHeight, canvas.width, 3)
+
+      const fontSize = Math.max(13, Math.round(bannerHeight * 0.32))
+      ctx.font = `600 ${fontSize}px sans-serif`
+      ctx.fillStyle = '#FFFFFF'
+      ctx.textBaseline = 'middle'
+      const textY = canvas.height - (bannerHeight / 2)
+
+      ctx.fillText(`FrameSense AI  •  ${photo.verdict}`, 20, textY)
+
+      ctx.textAlign = 'right'
+      ctx.fillStyle = '#4ade80'
+      ctx.fillText(`Score ${photo.score}/100 [Grade ${photo.grade}]  •  Aesthetic ${photo.aesthetic.toFixed(1)}/10`, canvas.width - 20, textY)
+
+      const link = document.createElement('a')
+      link.download = `FrameSense_Scorecard_${photo.id}.jpg`
+      link.href = canvas.toDataURL('image/jpeg', 0.95)
+      link.click()
     }
   }
 
@@ -356,6 +406,30 @@ export default function GalleryPage() {
 
             {/* Controls: Filter Pills & Sorting */}
             <div className="flex flex-wrap items-center gap-3">
+              {/* User Scope: All vs My Captures */}
+              <div className="flex items-center gap-1 rounded-xl border border-[#21866D]/30 bg-emerald-50/50 p-1">
+                <button
+                  onClick={() => setScope('all')}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                    scope === 'all'
+                      ? 'bg-[#173F38] text-white shadow-sm'
+                      : 'text-[#193B38] hover:text-[#21866D]'
+                  }`}
+                >
+                  All Captures
+                </button>
+                <button
+                  onClick={() => setScope('mine')}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                    scope === 'mine'
+                      ? 'bg-[#21866D] text-white shadow-sm'
+                      : 'text-[#193B38] hover:text-[#21866D]'
+                  }`}
+                >
+                  My Photos {user?.firstName ? `(${user.firstName})` : ''}
+                </button>
+              </div>
+
               {/* Filter Tabs */}
               <div className="flex items-center gap-1 rounded-xl border border-[#E3E9E5] bg-[#F7F8F4] p-1">
                 <button
@@ -631,13 +705,22 @@ export default function GalleryPage() {
                 <span>{selectedPhoto.date} {selectedPhoto.timestamp}</span>
               </div>
               {selectedPhoto.thumbnail && (
-                <a
-                  href={selectedPhoto.thumbnail}
-                  download={`FrameSense_${selectedPhoto.id}.jpg`}
-                  className="flex h-10 items-center gap-2 rounded-xl bg-[#173F38] px-5 font-semibold text-white shadow-sm transition hover:bg-[#21866D]"
-                >
-                  <Download size={14} /> Download Image
-                </a>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => downloadWithWatermark(selectedPhoto)}
+                    className="flex h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-[#21866D] to-[#173F38] px-4 font-semibold text-white shadow-sm transition hover:opacity-90"
+                    title="Export photo with branded composition & aesthetic scorecard banner"
+                  >
+                    <Sparkles size={14} /> Download with Scorecard
+                  </button>
+                  <a
+                    href={selectedPhoto.thumbnail}
+                    download={`FrameSense_${selectedPhoto.id}.jpg`}
+                    className="flex h-10 items-center gap-2 rounded-xl border border-[#E3E9E5] bg-white px-4 font-semibold text-[#193B38] shadow-sm transition hover:bg-[#F7F8F4]"
+                  >
+                    <Download size={14} /> Original
+                  </a>
+                </div>
               )}
             </div>
           </div>
