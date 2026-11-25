@@ -19,8 +19,11 @@ import torch
 # MediaPipe face detection
 try:
     import mediapipe as mp
-    mp_face_detection = mp.solutions.face_detection
-except ImportError:
+    if hasattr(mp, "solutions") and hasattr(mp.solutions, "face_detection"):
+        mp_face_detection = mp.solutions.face_detection
+    else:
+        from mediapipe.python.solutions import face_detection as mp_face_detection
+except Exception:
     mp = None
     mp_face_detection = None
 
