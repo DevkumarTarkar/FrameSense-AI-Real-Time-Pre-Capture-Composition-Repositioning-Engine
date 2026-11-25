@@ -19,6 +19,8 @@ RUN pip install --no-cache-dir -r ./backend/requirements.txt
 # Copy source code
 COPY backend ./backend
 COPY ai_engine ./ai_engine
+COPY ml_model ./ml_model
+RUN mkdir -p /app/data/uploads
 
 # Set python path and unbuffered logging
 ENV PYTHONPATH=/app

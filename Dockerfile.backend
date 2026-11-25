@@ -18,6 +18,8 @@ RUN pip install --no-cache-dir -r ./backend/requirements.txt
 # Copy backend and ai_engine code
 COPY backend ./backend
 COPY ai_engine ./ai_engine
+COPY ml_model ./ml_model
+RUN mkdir -p /app/data/uploads
 
 # Set python path
 ENV PYTHONPATH=/app
