@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
+import { getApiBaseUrl } from '@/lib/apiConfig'
 import Navbar from '@/components/Navbar'
 import Sidebar from '@/components/Sidebar'
 import Footer from '@/components/Footer'
@@ -60,7 +61,7 @@ export default function GalleryPage() {
   const fetchCaptures = useCallback(async () => {
     setLoading(true)
     const host = typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : '127.0.0.1'
-    const apiUrl = `http://${host}:8000/api/captures`
+    const apiUrl = `${getApiBaseUrl()}/api/captures`
 
     try {
       const res = await fetch(apiUrl, { cache: 'no-store' })
@@ -71,7 +72,7 @@ export default function GalleryPage() {
             const rawUrl = item.image_url || item.thumbnail || ''
             const fullUrl = rawUrl.startsWith('http') || rawUrl.startsWith('data:')
               ? rawUrl
-              : `http://${host}:8000${rawUrl}`
+              : `${getApiBaseUrl()}${rawUrl}`
             return {
               id: item.id,
               timestamp: item.timestamp,
@@ -214,7 +215,7 @@ export default function GalleryPage() {
     const host = typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : '127.0.0.1'
     try {
       if (isBackendDb) {
-        await fetch(`http://${host}:8000/api/captures/${id}`, { method: 'DELETE' })
+        await fetch(`${getApiBaseUrl()}/api/captures/${id}`, { method: 'DELETE' })
       }
     } catch (e) {
       console.warn('Failed to delete from backend:', e)

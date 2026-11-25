@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import Navbar from '@/components/Navbar'
+import { getApiBaseUrl } from '@/lib/apiConfig'
 import Sidebar from '@/components/Sidebar'
 import Footer from '@/components/Footer'
 import {
@@ -103,7 +104,7 @@ export default function UploadPage() {
         formData.append('file', file)
 
         const host = typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : '127.0.0.1'
-        const apiUrl = `http://${host}:8000/api/analyze-image`
+        const apiUrl = `${getApiBaseUrl()}/api/analyze-image`
 
         const res = await fetch(apiUrl, {
           method: 'POST',
@@ -143,7 +144,7 @@ export default function UploadPage() {
       formData.append('file', file)
 
       const host = typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : '127.0.0.1'
-      const apiUrl = `http://${host}:8000/api/analyze-image`
+      const apiUrl = `${getApiBaseUrl()}/api/analyze-image`
 
       const res = await fetch(apiUrl, {
         method: 'POST',

@@ -29,8 +29,13 @@ async def websocket_composition_endpoint(websocket: WebSocket):
             # Receive text data (JSON or base64) from client
             raw_data = await websocket.receive_text()
 
+            # Handle lightweight cloud heartbeat / keep-alive pings
+            stripped = raw_data.strip()
+            if stripped == "ping" or stripped == '{"type":"ping"}' or '"ping"' in stripped:
+                await websocket.send_text("pong")
+                continue
+
             try:
-                stripped = raw_data.strip()
                 if stripped.startswith("{"):
                     data = json.loads(stripped)
                     payload = FramePayload(**data)

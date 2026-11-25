@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Aperture, Lock, Mail, Eye, EyeOff, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
+import { getApiBaseUrl } from '@/lib/apiConfig'
 import Footer from '@/components/Footer'
 
 export default function LoginPage() {
@@ -35,7 +36,7 @@ export default function LoginPage() {
     }
 
     const host = typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : '127.0.0.1'
-    const apiUrl = `http://${host}:8000/api/auth/login`
+    const apiUrl = `${getApiBaseUrl()}/api/auth/login`
 
     try {
       const res = await fetch(apiUrl, {

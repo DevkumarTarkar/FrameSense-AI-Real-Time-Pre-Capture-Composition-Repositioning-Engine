@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { Aperture, Lock, Mail, User, Calendar, Eye, EyeOff, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
+import { getApiBaseUrl } from '@/lib/apiConfig'
 import Footer from '@/components/Footer'
 
 export default function RegisterPage() {
@@ -67,7 +68,7 @@ export default function RegisterPage() {
 
     setIsLoading(true)
     const host = typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : '127.0.0.1'
-    const apiUrl = `http://${host}:8000/api/auth/register`
+    const apiUrl = `${getApiBaseUrl()}/api/auth/register`
 
     try {
       const res = await fetch(apiUrl, {

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
+import { getApiBaseUrl, getWebSocketUrl } from '@/lib/apiConfig'
 import Navbar from '@/components/Navbar'
 import Sidebar from '@/components/Sidebar'
 import Footer from '@/components/Footer'
@@ -649,14 +650,19 @@ export default function Page() {
         // Dynamic host resolution: Works on localhost, local Wi-Fi IP (Mobile testing), or deployed domain
         const host = typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : '127.0.0.1'
         const wsProtocol = typeof window !== 'undefined' && window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-        const wsUrl = `${wsProtocol}//${host}:8000/ws/analyze`
+        const wsUrl = getWebSocketUrl()
         ws = new WebSocket(wsUrl)
 
+        let heartbeatTimer: any = null
         ws.onopen = () => {
+          heartbeatTimer = setInterval(() => {
+            if (ws && ws.readyState === WebSocket.OPEN) ws.send('ping')
+          }, 15000)
           setWsStatus('connected')
         }
 
         ws.onmessage = (event) => {
+          if (event.data === 'pong') return
           try {
             const data = JSON.parse(event.data)
             if (data && typeof data === 'object') {
@@ -708,6 +714,7 @@ const isBusySpeaking = isSpeakingRef.current || (typeof window !== 'undefined' &
         }
 
         ws.onclose = () => {
+          if (heartbeatTimer) clearInterval(heartbeatTimer)
           setWsStatus('disconnected')
           reconnectTimeout = setTimeout(connectWS, 2500)
         }
@@ -805,7 +812,7 @@ const isBusySpeaking = isSpeakingRef.current || (typeof window !== 'undefined' &
 
           // Save capture to SQLite Backend + Uploads Storage (Eliminating LocalStorage Quota Crash)
           const host = typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : '127.0.0.1'
-          fetch(`http://${host}:8000/api/captures`, {
+          fetch(`${getApiBaseUrl()}/api/captures`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
