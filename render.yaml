@@ -17,7 +17,3 @@ services:
         value: "1"
       - key: DEVICE_PREFERENCE
         value: cpu
-    disk:
-      name: framesense-data
-      mountPath: /app/data
-      sizeGB: 1
